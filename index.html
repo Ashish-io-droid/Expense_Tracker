@@ -929,9 +929,10 @@ async function initFirebase() {
   try {
     const appMod = await import('https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js');
     const fsMod = await import('https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js');
+    const storageMod = await import('https://www.gstatic.com/firebasejs/12.17.1/firebase-storage.js');
     const app = appMod.initializeApp(FIREBASE_CONFIG);
     db = fsMod.getFirestore(app);
-    firebaseModules = fsMod;
+    firebaseModules = { ...fsMod, ...storageMod, storage: storageMod.getStorage(app) };
     try {
       if (fsMod.enableIndexedDbPersistence) await fsMod.enableIndexedDbPersistence(db);
     } catch(err) { console.warn('Offline cache err:', err); }
@@ -1060,6 +1061,9 @@ let expenseForm = {
   person: '',
   date: todayStr(),
   items: [{ product: '', category: 'food', quantity: 1, pricePerUnit: '', total: 0 }],
+  receiptFile: null,
+  receiptUrl: '',
+  recurring: false
 };
 
 function resetExpenseForm() {
@@ -1068,6 +1072,9 @@ function resetExpenseForm() {
     person: state.meta?.partnerA || '',
     date: todayStr(),
     items: [{ product: '', category: 'food', quantity: 1, pricePerUnit: '', total: 0 }],
+    receiptFile: null,
+    receiptUrl: '',
+    recurring: false
   };
 }
 
@@ -2096,6 +2103,11 @@ function renderAddExpenseModal() {
     </div>
 
     <form id="expense-form">
+      <div style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px dashed var(--border-light);">
+        <label class="label" style="color: var(--accent);">✨ Smart Add (Auto-fill)</label>
+        <input id="exp-smart" class="input-field" placeholder="e.g. Spent 500 on groceries paid by Ashish" style="border-color: var(--accent); background: var(--accent-dim);">
+      </div>
+
       <label class="label">Transaction Name</label>
       <input id="exp-name" class="input-field" value="${escHtml(expenseForm.name)}" placeholder="e.g. Big Bazaar Shopping, Swiggy Order" style="margin-bottom: 14px;">
 
@@ -2106,8 +2118,19 @@ function renderAddExpenseModal() {
         <button type="button" class="pill person-pill ${expenseForm.person === 'Both' ? 'active' : ''}" data-person="Both" style="${expenseForm.person === 'Both' ? 'background: var(--purple-dim); border-color: var(--purple); color: var(--purple);' : ''}">Both</button>
       </div>
 
-      <label class="label">Date</label>
-      <input id="exp-date" class="input-field input-field-mono" type="date" value="${expenseForm.date}" style="margin-bottom: 18px;">
+      <div class="flex gap-3" style="margin-bottom: 18px;">
+        <div style="flex: 1;">
+          <label class="label">Date</label>
+          <input id="exp-date" class="input-field input-field-mono" type="date" value="${expenseForm.date}">
+        </div>
+        <div style="flex: 1;">
+          <label class="label">Recurring</label>
+          <label style="display: flex; align-items: center; height: 42px; gap: 8px; font-size: 0.9rem; cursor: pointer;">
+            <input type="checkbox" id="exp-recurring" ${expenseForm.recurring ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: var(--accent);">
+            Weekly
+          </label>
+        </div>
+      </div>
 
       <div class="flex items-center justify-between" style="margin-bottom: 10px;">
         <label class="label" style="margin-bottom: 0;">Items</label>
@@ -2115,6 +2138,10 @@ function renderAddExpenseModal() {
       </div>
 
       ${itemsHTML}
+      
+      <label class="label" style="margin-top: 16px;">🧾 Attach Receipt (Optional)</label>
+      <input type="file" id="exp-receipt" accept="image/*" class="input-field" style="padding: 10px; font-size: 0.85rem; margin-bottom: 16px;">
+      ${expenseForm.receiptUrl && isEdit ? `<img src="${expenseForm.receiptUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--border-light);">` : ''}
 
       <!-- Grand Total -->
       <div class="flex items-center justify-between" style="padding: 14px 0; border-top: 2px solid var(--border-light); margin-top: 8px;">
@@ -2135,6 +2162,29 @@ function renderAddExpenseModal() {
 function attachExpenseFormEvents() {
   document.getElementById('modal-close')?.addEventListener('click', closeModal);
   document.getElementById('exp-cancel')?.addEventListener('click', closeModal);
+
+  // Smart Add
+  const smartInput = document.getElementById('exp-smart');
+  if (smartInput) {
+    smartInput.addEventListener('change', () => {
+      const val = smartInput.value.trim();
+      if (!val) return;
+      const match = val.match(/spent\s+(\d+(?:\.\d+)?)\s+on\s+(.+?)(?:\s+paid\s+by\s+(.+))?$/i);
+      if (match) {
+        const [, amt, prod, person] = match;
+        syncFormToState();
+        expenseForm.name = prod.charAt(0).toUpperCase() + prod.slice(1);
+        expenseForm.items = [{ product: prod, category: 'other', quantity: 1, pricePerUnit: Number(amt), total: Number(amt) }];
+        if (person) {
+          const pTitle = person.charAt(0).toUpperCase() + person.slice(1).toLowerCase();
+          if (pTitle === state.meta.partnerA || pTitle === state.meta.partnerB || pTitle === 'Both') {
+            expenseForm.person = pTitle;
+          }
+        }
+        renderModal();
+      }
+    });
+  }
 
   // Person pills
   document.querySelectorAll('.person-pill').forEach(btn => {
@@ -2182,7 +2232,7 @@ function attachExpenseFormEvents() {
   });
 
   // Form submit
-  document.getElementById('expense-form')?.addEventListener('submit', (e) => {
+  document.getElementById('expense-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     syncFormToState();
 
@@ -2200,6 +2250,24 @@ function attachExpenseFormEvents() {
       return;
     }
 
+    const btn = document.querySelector('#expense-form button[type="submit"]');
+    const originalText = btn.textContent;
+    btn.textContent = 'Saving...';
+    btn.disabled = true;
+
+    let receiptUrl = expenseForm.receiptUrl || '';
+
+    if (expenseForm.receiptFile && USE_FIREBASE && firebaseModules.storage) {
+      try {
+        const { ref, uploadBytes, getDownloadURL } = firebaseModules;
+        const storageRef = ref(firebaseModules.storage, `receipts/${Date.now()}_${expenseForm.receiptFile.name}`);
+        const snapshot = await uploadBytes(storageRef, expenseForm.receiptFile);
+        receiptUrl = await getDownloadURL(snapshot.ref);
+      } catch (err) {
+        console.warn('Receipt upload failed:', err);
+      }
+    }
+
     const txn = {
       id: state.editingTxn ? state.editingTxn.id : genId(),
       type: 'expense',
@@ -2214,6 +2282,9 @@ function attachExpenseFormEvents() {
         total: (Number(i.quantity) || 1) * (Number(i.pricePerUnit) || 0),
       })),
       total: grandTotal,
+      recurring: expenseForm.recurring,
+      recurringLastInjected: expenseForm.recurring ? (state.editingTxn?.recurringLastInjected || date) : null,
+      receiptUrl: receiptUrl,
       createdAt: state.editingTxn ? state.editingTxn.createdAt : Date.now(),
     };
 
@@ -2233,8 +2304,15 @@ function attachExpenseFormEvents() {
 function syncFormToState() {
   const nameInput = document.getElementById('exp-name');
   const dateInput = document.getElementById('exp-date');
+  const recurringInput = document.getElementById('exp-recurring');
+  const receiptInput = document.getElementById('exp-receipt');
+
   if (nameInput) expenseForm.name = nameInput.value;
   if (dateInput) expenseForm.date = dateInput.value;
+  if (recurringInput) expenseForm.recurring = recurringInput.checked;
+  if (receiptInput && receiptInput.files && receiptInput.files[0]) {
+    expenseForm.receiptFile = receiptInput.files[0];
+  }
 
   document.querySelectorAll('.item-form-row').forEach((row) => {
     const idx = Number(row.dataset.itemIdx);
@@ -2596,8 +2674,34 @@ async function init() {
     }
   }
 
-  if (state.meta) resetExpenseForm();
+  // Process Recurring Expenses
+  if (state.transactions && state.transactions.length > 0) {
+    let injectedAny = false;
+    const now = new Date();
+    state.transactions.forEach(t => {
+      if (t.recurring && t.recurringLastInjected) {
+        const last = new Date(t.recurringLastInjected);
+        const diffTime = Math.abs(now - last);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+        if (diffDays >= 7) {
+          // Clone transaction for today
+          const clone = JSON.parse(JSON.stringify(t));
+          clone.id = genId();
+          clone.date = todayStr();
+          clone.createdAt = Date.now();
+          clone.recurring = true;
+          clone.recurringLastInjected = todayStr();
+          state.transactions.push(clone);
+          
+          t.recurringLastInjected = todayStr(); // update original
+          injectedAny = true;
+        }
+      }
+    });
+    if (injectedAny) persistAll();
+  }
 
+  if (state.meta) resetExpenseForm();
   // Ensure skeleton shows for at least 800ms
   const elapsed = Date.now() - skeletonStart;
   const remaining = Math.max(800 - elapsed, 0);
@@ -2615,6 +2719,53 @@ async function init() {
 }
 
 init();
+
+/* ── Pull to Refresh ── */
+let touchStartY = 0;
+let isPulling = false;
+document.addEventListener('touchstart', (e) => {
+  if (window.scrollY === 0) {
+    touchStartY = e.touches[0].clientY;
+    isPulling = true;
+  }
+}, { passive: true });
+
+document.addEventListener('touchmove', (e) => {
+  if (!isPulling) return;
+  const touchY = e.touches[0].clientY;
+  const pullDistance = touchY - touchStartY;
+  if (pullDistance > 120) {
+    document.body.style.transform = `translateY(${Math.min(pullDistance - 120, 60)}px)`;
+  }
+}, { passive: true });
+
+document.addEventListener('touchend', async (e) => {
+  if (!isPulling) return;
+  isPulling = false;
+  const pullDistance = e.changedTouches[0].clientY - touchStartY;
+  document.body.style.transform = 'translateY(0)';
+  document.body.style.transition = 'transform 0.3s ease';
+  setTimeout(() => document.body.style.transition = '', 300);
+
+  if (pullDistance > 150 && window.scrollY === 0) {
+    if (navigator.vibrate) navigator.vibrate([20, 50, 20]);
+    if (USE_FIREBASE) {
+      const ok = await initFirebase();
+      if (ok) {
+        try {
+          const { collection, getDocs } = firebaseModules;
+          const txnSnap = await getDocs(collection(db, 'transactions'));
+          const remoteTxns = [];
+          txnSnap.forEach(d => remoteTxns.push(d.data()));
+          state.transactions = remoteTxns;
+          persistAll();
+          render();
+        } catch (err) { console.warn('Refresh failed', err); }
+      }
+    }
+  }
+});
+
 </script>
 </body>
 </html>
