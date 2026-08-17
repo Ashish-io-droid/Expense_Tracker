@@ -869,20 +869,12 @@ select.input-field option {
   const gate = document.getElementById('password-gate');
   const app = document.getElementById('app');
 
-  // Check if already authenticated this session
-  if (sessionStorage.getItem('spendsync_auth') === 'true') {
-    gate.style.display = 'none';
-    app.style.display = '';
-    return;
-  }
-
   document.getElementById('pw-form').addEventListener('submit', function(e) {
     e.preventDefault();
     const input = document.getElementById('pw-input');
     const error = document.getElementById('pw-error');
     
     if (input.value === PASSCODE) {
-      sessionStorage.setItem('spendsync_auth', 'true');
       window.dispatchEvent(new Event('spendsync_unlocked'));
       if (navigator.vibrate) navigator.vibrate(50);
       gate.style.opacity = '0';
@@ -2564,9 +2556,7 @@ document.addEventListener('keydown', (event) => {
    INITIALIZATION
    ══════════════════════════════════════ */
 async function init() {
-  if (sessionStorage.getItem('spendsync_auth') !== 'true') {
-    await new Promise(resolve => window.addEventListener('spendsync_unlocked', resolve));
-  }
+  await new Promise(resolve => window.addEventListener('spendsync_unlocked', resolve));
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(console.warn);
