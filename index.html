@@ -1649,12 +1649,10 @@ function renderDashboardHTML() {
       }
 
       listHTML += `
-        <div class="txn-row" data-txn-toggle="${t.id}" style="position: relative; overflow: hidden;">
-          <div class="swipe-actions" style="position: absolute; top: 0; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-between; z-index: 0;">
-             <button class="btn" style="background: var(--blue); color: white; width: 70px; border-radius: 0;" data-edit-txn="${t.id}">${ICONS.edit}</button>
-             <button class="btn btn-danger" style="width: 70px; border-radius: 0;" data-delete-txn="${t.id}">${ICONS.trash}</button>
-          </div>
-          <div class="txn-row-inner" data-swipe-id="${t.id}" style="position: relative; z-index: 1; background: var(--bg-card); transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+        <div class="txn-row" data-txn-toggle="${t.id}" style="position: relative; overflow-x: hidden;">
+          <button class="btn swipe-btn-edit" style="position: absolute; left: -70px; top: 14px; bottom: 14px; background: var(--blue); color: white; width: 64px; border-radius: var(--radius-sm); padding: 0; display: flex; align-items: center; justify-content: center; z-index: 2; transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);" data-edit-txn="${t.id}">${ICONS.edit}</button>
+          
+          <div class="txn-row-inner" data-swipe-id="${t.id}" style="position: relative; z-index: 1; transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
             <div class="flex items-center gap-3">
               ${catIconHTML}
               <div class="flex-1" style="min-width: 0;">
@@ -1673,6 +1671,8 @@ function renderDashboardHTML() {
             </div>
             ${expandedHTML}
           </div>
+
+          <button class="btn btn-danger swipe-btn-delete" style="position: absolute; right: -70px; top: 14px; bottom: 14px; width: 64px; border-radius: var(--radius-sm); padding: 0; display: flex; align-items: center; justify-content: center; z-index: 2; transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);" data-delete-txn="${t.id}">${ICONS.trash}</button>
         </div>
       `;
     });
@@ -1714,6 +1714,11 @@ function attachDashboardEvents() {
       if (diffX > -100 && diffX < 100) {
         swipeCurrentX = diffX;
         inner.style.transform = `translateX(${diffX}px)`;
+        
+        const editBtn = inner.parentElement.querySelector('.swipe-btn-edit');
+        const deleteBtn = inner.parentElement.querySelector('.swipe-btn-delete');
+        if (editBtn && diffX > 0) editBtn.style.transform = `translateX(${diffX}px)`;
+        if (deleteBtn && diffX < 0) deleteBtn.style.transform = `translateX(${diffX}px)`;
       }
     }, { passive: true });
 
@@ -1721,30 +1726,40 @@ function attachDashboardEvents() {
       if (!isSwiping || activeSwipeElement !== inner) return;
       isSwiping = false;
       inner.style.transition = 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)';
+      const editBtn = inner.parentElement.querySelector('.swipe-btn-edit');
+      const deleteBtn = inner.parentElement.querySelector('.swipe-btn-delete');
+      if (editBtn) editBtn.style.transition = 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)';
+      if (deleteBtn) deleteBtn.style.transition = 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)';
       
       // Threshold for action
       if (swipeCurrentX < -50) {
         // Swipe left -> Delete
         inner.style.transform = `translateX(-70px)`;
+        if (deleteBtn) deleteBtn.style.transform = `translateX(-70px)`;
         setTimeout(() => {
-          const btn = inner.parentElement.querySelector('[data-delete-txn]');
-          if(btn) btn.click();
+          if(deleteBtn) deleteBtn.click();
         }, 200);
       } else if (swipeCurrentX > 50) {
         // Swipe right -> Edit
         inner.style.transform = `translateX(70px)`;
+        if (editBtn) editBtn.style.transform = `translateX(70px)`;
         setTimeout(() => {
-          const btn = inner.parentElement.querySelector('[data-edit-txn]');
-          if(btn) btn.click();
+          if(editBtn) editBtn.click();
         }, 200);
       } else {
         // Revert
         inner.style.transform = `translateX(0)`;
+        if (editBtn) editBtn.style.transform = `translateX(0)`;
+        if (deleteBtn) deleteBtn.style.transform = `translateX(0)`;
       }
       
       // Reset after animation
       setTimeout(() => {
         if(inner) inner.style.transform = `translateX(0)`;
+        if(editBtn) editBtn.style.transform = `translateX(0)`;
+        if(deleteBtn) deleteBtn.style.transform = `translateX(0)`;
+        if(editBtn) editBtn.style.transition = '';
+        if(deleteBtn) deleteBtn.style.transition = '';
       }, 300);
       
       swipeCurrentX = 0;
