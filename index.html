@@ -1198,10 +1198,10 @@ function renderMainApp() {
   const pctA = spentTotal > 0 ? (sA / spentTotal * 100) : 0;
   const pctB = spentTotal > 0 ? (sB / spentTotal * 100) : 0;
   const pctBoth = spentTotal > 0 ? (sBoth / spentTotal * 100) : 0;
-  const budget = Number(state.meta.monthlyBudget) || 0;
-  const monthSpent = currentMonthSpent();
-  const budgetPct = budget > 0 ? Math.min((monthSpent / budget) * 100, 100) : 0;
-  const budgetLeft = budget - monthSpent;
+  const budget = Number(state.meta.weeklyBudget) || Number(state.meta.monthlyBudget) || 0;
+  const weekSpent = currentWeekSpent();
+  const budgetPct = budget > 0 ? Math.min((weekSpent / budget) * 100, 100) : 0;
+  const budgetLeft = budget - weekSpent;
 
   const isDashboard = state.view === 'dashboard';
 
