@@ -2245,11 +2245,34 @@ function attachSettingsEvents() {
     const currency = document.getElementById('set-currency')?.value.trim() || '₹';
     const monthlyBudget = Math.max(Number(document.getElementById('set-budget')?.value) || 0, 0);
     if (!a || !b) return;
+
+    const oldA = state.meta.partnerA;
+    const oldB = state.meta.partnerB;
+    
     state.meta.partnerA = a;
     state.meta.partnerB = b;
     state.meta.currency = currency;
     state.meta.monthlyBudget = monthlyBudget;
-    persistMeta();
+
+    // Migrate existing transactions if names changed
+    let txnsUpdated = false;
+    state.transactions = state.transactions.map(t => {
+      let updatedPerson = t.person;
+      if (t.person === oldA && a !== oldA) updatedPerson = a;
+      else if (t.person === oldB && b !== oldB) updatedPerson = b;
+      
+      if (updatedPerson !== t.person) {
+        txnsUpdated = true;
+        return { ...t, person: updatedPerson };
+      }
+      return t;
+    });
+
+    if (txnsUpdated) {
+      persistAll();
+    } else {
+      persistMeta();
+    }
     closeModal();
     render();
   });
