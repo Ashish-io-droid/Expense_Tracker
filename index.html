@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>SpendSync — Joint Expense Tracker</title>
 <meta name="description" content="Track shared expenses together. Add transactions, categorize spending, and analyze where your money goes.">
+<meta name="theme-color" content="#050505">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="./manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Sans:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -302,7 +306,7 @@ select.input-field option {
 /* ── FAB ── */
 .fab {
   position: fixed;
-  bottom: 24px;
+  bottom: calc(24px + env(safe-area-inset-bottom));
   right: 24px;
   z-index: 50;
   display: flex;
@@ -345,12 +349,12 @@ select.input-field option {
   overflow-y: auto;
   background: var(--bg-surface);
   border: 1px solid var(--border-light);
-  border-radius: var(--radius) var(--radius) 0 0;
-  padding: 24px;
-  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 24px 24px 0 0;
+  padding: 24px 24px calc(24px + env(safe-area-inset-bottom));
+  animation: slideUpBottomSheet 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 @media (min-width: 480px) {
-  .modal-content { border-radius: var(--radius); }
+  .modal-content { border-radius: var(--radius); padding: 24px; }
 }
 .modal-content::-webkit-scrollbar { width: 4px; }
 .modal-content::-webkit-scrollbar-track { background: transparent; }
@@ -685,6 +689,10 @@ select.input-field option {
   from { opacity: 0; transform: translateY(40px); }
   to { opacity: 1; transform: translateY(0); }
 }
+@keyframes slideUpBottomSheet {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
 @keyframes slideDown {
   from { opacity: 0; transform: translateY(-20px); }
   to { opacity: 1; transform: translateY(0); }
@@ -798,6 +806,7 @@ select.input-field option {
     </div>
   </div>
 
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 <script type="module">
 /* ══════════════════════════════════════════════
    FIREBASE CONFIGURATION
@@ -833,7 +842,10 @@ async function initFirebase() {
     const app = appMod.initializeApp(FIREBASE_CONFIG);
     db = fsMod.getFirestore(app);
     firebaseModules = fsMod;
-    console.log('✅ Firebase connected');
+    try {
+      if (fsMod.enableIndexedDbPersistence) await fsMod.enableIndexedDbPersistence(db);
+    } catch(err) { console.warn('Offline cache err:', err); }
+    console.log('✅ Firebase connected (Offline enabled)');
     return true;
   } catch (e) {
     console.warn('Firebase init failed, using localStorage', e);
@@ -1153,6 +1165,7 @@ function daysInSelectedPeriod(txns) {
    RENDER ENGINE
    ══════════════════════════════════════ */
 const $app = document.getElementById('app');
+function haptic() { if (navigator.vibrate) navigator.vibrate(50); }
 
 function render() {
   if (!state.meta) {
@@ -1256,6 +1269,11 @@ function renderMainApp() {
 
   const isDashboard = state.view === 'dashboard';
 
+  if (isDashboard && budget > 0 && budgetLeft >= 0 && new Date().getDay() === 0 && window.confetti && !state.confettiFired) {
+    state.confettiFired = true;
+    setTimeout(() => confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } }), 500);
+  }
+
   $app.innerHTML = `
     <div class="container" style="padding-top: 20px; padding-bottom: 100px;">
       <!-- Header -->
@@ -1347,12 +1365,14 @@ function renderMainApp() {
   // Attach events
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      haptic();
       state.view = btn.dataset.tab;
       render();
     });
   });
 
   document.getElementById('btn-settings').addEventListener('click', () => {
+    haptic();
     state.modal = 'settings';
     renderModal();
   });
@@ -1775,6 +1795,7 @@ function renderSummaryHTML() {
 function attachSummaryEvents() {
   document.querySelectorAll('[data-period]').forEach(btn => {
     btn.addEventListener('click', () => {
+      haptic();
       state.summaryPeriod = btn.dataset.period;
       render();
     });
@@ -1927,6 +1948,7 @@ function renderModal() {
 }
 
 function closeModal() {
+  haptic();
   state.modal = null;
   state.editingTxn = null;
   const root = document.getElementById('modal-root');
@@ -2444,6 +2466,9 @@ document.addEventListener('keydown', (event) => {
    INITIALIZATION
    ══════════════════════════════════════ */
 async function init() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(console.warn);
+  }
   // Load from localStorage first
   const local = loadLocal();
   if (local && local.meta) {
