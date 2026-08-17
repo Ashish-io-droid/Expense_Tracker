@@ -6,68 +6,68 @@
 <title>SpendSync — Joint Expense Tracker</title>
 <meta name="description" content="Track shared expenses together. Add transactions, categorize spending, and analyze where your money goes.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Sans:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 /* ══════════════════════════════════════════════
    DESIGN SYSTEM — Dark Glassmorphism Theme
    ══════════════════════════════════════════════ */
 :root {
-  --bg-base: #050505;
-  --bg-surface: #0a0a0b;
-  --bg-card: rgba(255,255,255,0.03);
-  --bg-card-hover: rgba(255,255,255,0.06);
-  --bg-elevated: rgba(255,255,255,0.05);
-  --bg-input: rgba(255,255,255,0.04);
-  --bg-modal: rgba(5,5,5,0.85);
+  --bg-base: #080b16;
+  --bg-surface: #0f1221;
+  --bg-card: rgba(255,255,255,0.04);
+  --bg-card-hover: rgba(255,255,255,0.07);
+  --bg-elevated: rgba(255,255,255,0.06);
+  --bg-input: rgba(255,255,255,0.06);
+  --bg-modal: rgba(8,11,22,0.85);
 
-  --border: rgba(255,255,255,0.08);
+  --border: rgba(255,255,255,0.07);
   --border-light: rgba(255,255,255,0.12);
-  --border-focus: rgba(16,185,129,0.5);
+  --border-focus: rgba(110,231,183,0.5);
 
-  --text-primary: #f8fafc;
+  --text-primary: #f1f5f9;
   --text-secondary: #94a3b8;
   --text-muted: #475569;
-  --text-inverse: #020617;
+  --text-inverse: #0f172a;
 
-  --accent: #10b981;
-  --accent-dim: rgba(16,185,129,0.15);
-  --shared: #f59e0b;
-  --shared-dim: rgba(245,158,11,0.15);
-  --expense: #f43f5e;
-  --expense-dim: rgba(244,63,94,0.15);
-  --topup: #10b981;
-  --topup-dim: rgba(16,185,129,0.15);
+  --accent: #6ee7b7;
+  --accent-dim: rgba(110,231,183,0.15);
+  --purple: #818cf8;
+  --purple-dim: rgba(129,140,248,0.15);
+  --expense: #f87171;
+  --expense-dim: rgba(248,113,113,0.15);
+  --topup: #34d399;
+  --topup-dim: rgba(52,211,153,0.15);
 
-  --partner-a: #0ea5e9;
-  --partner-a-dim: rgba(14,165,233,0.15);
-  --partner-b: #6366f1;
-  --partner-b-dim: rgba(99,102,241,0.15);
+  --partner-a: #f472b6;
+  --partner-a-dim: rgba(244,114,182,0.15);
+  --partner-b: #60a5fa;
+  --partner-b-dim: rgba(96,165,250,0.15);
 
-  --cat-food: #10b981;
+  --cat-food: #34d399;
   --cat-snacks: #fbbf24;
-  --cat-daily: #0ea5e9;
-  --cat-stationery: #059669;
-  --cat-travel: #f43f5e;
-  --cat-medical: #ef4444;
-  --cat-entertainment: #f97316;
-  --cat-clothing: #6366f1;
-  --cat-utilities: #06b6d4;
+  --cat-daily: #60a5fa;
+  --cat-stationery: #a78bfa;
+  --cat-travel: #f472b6;
+  --cat-medical: #f87171;
+  --cat-entertainment: #fb923c;
+  --cat-clothing: #818cf8;
+  --cat-utilities: #22d3ee;
   --cat-other: #94a3b8;
 
-  --radius: 20px;
-  --radius-md: 16px;
-  --radius-sm: 12px;
+  --radius: 18px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
   --radius-xs: 8px;
   --radius-full: 9999px;
 
   --font-body: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-heading: 'DM Sans', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', monospace;
 
-  --shadow-sm: 0 2px 8px rgba(0,0,0,0.4);
-  --shadow-md: 0 8px 32px rgba(0,0,0,0.6);
-  --shadow-lg: 0 16px 48px rgba(0,0,0,0.8);
-  --shadow-glow: 0 0 40px rgba(16,185,129,0.15);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.2);
+  --shadow-md: 0 8px 32px rgba(0,0,0,0.3);
+  --shadow-lg: 0 16px 48px rgba(0,0,0,0.4);
+  --shadow-glow: 0 0 40px rgba(110,231,183,0.1);
 }
 
 /* ── Reset & Base ── */
@@ -91,7 +91,7 @@ a { color: var(--accent); text-decoration: none; }
 #app {
   min-height: 100vh;
   min-height: 100dvh;
-  background: var(--bg-base);
+  background: linear-gradient(160deg, #080b16 0%, #0d1025 30%, #131638 60%, #0f1221 100%);
   position: relative;
 }
 #app::before {
@@ -102,7 +102,7 @@ a { color: var(--accent); text-decoration: none; }
   width: 80vw;
   height: 80vw;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(16,185,129,0.04) 0%, transparent 60%);
+  background: radial-gradient(circle, rgba(110,231,183,0.04) 0%, transparent 60%);
   pointer-events: none;
   z-index: 0;
 }
@@ -114,7 +114,7 @@ a { color: var(--accent); text-decoration: none; }
   width: 70vw;
   height: 70vw;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(14,165,233,0.03) 0%, transparent 60%);
+  background: radial-gradient(circle, rgba(129,140,248,0.03) 0%, transparent 60%);
   pointer-events: none;
   z-index: 0;
 }
@@ -136,12 +136,12 @@ a { color: var(--accent); text-decoration: none; }
 }
 
 /* ── Typography ── */
-.heading-xl { font-family: var(--font-heading); font-size: 1.85rem; font-weight: 800; line-height: 1.2; letter-spacing: -0.03em; }
-.heading-lg { font-family: var(--font-heading); font-size: 1.4rem; font-weight: 700; line-height: 1.3; letter-spacing: -0.02em; }
-.heading-md { font-family: var(--font-heading); font-size: 1.15rem; font-weight: 700; line-height: 1.3; letter-spacing: -0.01em; }
+.heading-xl { font-family: var(--font-heading); font-size: 1.75rem; font-weight: 700; line-height: 1.2; }
+.heading-lg { font-family: var(--font-heading); font-size: 1.35rem; font-weight: 700; line-height: 1.3; }
+.heading-md { font-family: var(--font-heading); font-size: 1.1rem; font-weight: 600; line-height: 1.3; }
 .text-sm { font-size: 0.875rem; }
 .text-xs { font-size: 0.75rem; }
-.text-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.text-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .text-muted { color: var(--text-secondary); }
 .text-accent { color: var(--accent); }
 .font-semibold { font-weight: 600; }
@@ -219,11 +219,11 @@ select.input-field option {
 }
 .btn:active { transform: scale(0.96); }
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent) 0%, #059669 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, #34d399 100%);
   color: var(--text-inverse);
-  box-shadow: 0 4px 16px rgba(16,185,129,0.25);
+  box-shadow: 0 4px 16px rgba(110,231,183,0.25);
 }
-.btn-primary:hover { box-shadow: 0 6px 24px rgba(16,185,129,0.35); }
+.btn-primary:hover { box-shadow: 0 6px 24px rgba(110,231,183,0.35); }
 .btn-ghost {
   background: var(--bg-card);
   border: 1.5px solid var(--border);
@@ -361,10 +361,10 @@ select.input-field option {
   padding: 14px 0;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background 0.15s;
 }
 .txn-row:last-child { border-bottom: none; }
-.txn-row:hover { background: var(--bg-card-hover); margin: 0 -16px; padding: 14px 16px; border-radius: var(--radius-sm); transform: scale(1.01); }
+.txn-row:hover { background: var(--bg-card-hover); margin: 0 -16px; padding: 14px 16px; border-radius: var(--radius-sm); }
 .txn-item-row {
   display: flex;
   align-items: center;
@@ -428,16 +428,14 @@ select.input-field option {
 
 /* ── Balance Card ── */
 .balance-card {
-  background: linear-gradient(135deg, rgba(16,185,129,0.05) 0%, rgba(14,165,233,0.05) 100%);
+  background: linear-gradient(135deg, rgba(110,231,183,0.08) 0%, rgba(129,140,248,0.05) 100%);
   backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(110,231,183,0.12);
   border-radius: var(--radius);
   padding: 24px;
   margin-bottom: 20px;
   position: relative;
   overflow: hidden;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), var(--shadow-sm);
 }
 .balance-card::before {
   content: '';
@@ -447,7 +445,7 @@ select.input-field option {
   width: 200px;
   height: 200px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(110,231,183,0.08) 0%, transparent 70%);
 }
 .balance-amount {
   font-family: var(--font-mono);
@@ -1294,7 +1292,7 @@ function renderMainApp() {
               <span class="text-mono">${formatAmt(sA, state.meta.currency)}</span>
             </span>
             <span class="payer-breakdown-item flex items-center gap-2">
-              <span class="badge badge-sm" style="background: var(--shared);">👥</span>
+              <span class="badge badge-sm" style="background: var(--purple);">👥</span>
               <span class="text-mono">${formatAmt(sBoth, state.meta.currency)}</span>
             </span>
             <span class="payer-breakdown-item flex items-center gap-2" style="justify-content: flex-end;">
@@ -1305,7 +1303,7 @@ function renderMainApp() {
           <div class="progress-track">
             <div class="flex" style="height: 100%;">
               <div class="progress-bar" style="width: ${pctA}%; background: var(--partner-a);"></div>
-              <div class="progress-bar" style="width: ${pctBoth}%; background: var(--shared);"></div>
+              <div class="progress-bar" style="width: ${pctBoth}%; background: var(--purple);"></div>
               <div class="progress-bar" style="width: ${pctB}%; background: var(--partner-b);"></div>
             </div>
           </div>
@@ -1415,10 +1413,10 @@ function renderDashboardHTML() {
     listHTML += `<div class="date-group-header">${formatDateLong(date)}</div>`;
     items.forEach(t => {
       const isExpense = t.type === 'expense';
-      const personColor = t.person === state.meta.partnerA ? 'var(--partner-a)' : t.person === state.meta.partnerB ? 'var(--partner-b)' : 'var(--shared)';
+      const personColor = t.person === state.meta.partnerA ? 'var(--partner-a)' : t.person === state.meta.partnerB ? 'var(--partner-b)' : 'var(--purple)';
       const initial = t.person === 'Both' ? '👥' : (t.person ? t.person[0].toUpperCase() : '?');
       const badgeHTML = t.person === 'Both'
-        ? `<span class="badge badge-sm" style="background: var(--shared); font-size: 0.7rem;">👥</span>`
+        ? `<span class="badge badge-sm" style="background: var(--purple); font-size: 0.7rem;">👥</span>`
         : `<span class="badge badge-sm" style="background: ${personColor};">${initial}</span>`;
 
       const primaryCat = isExpense && t.items && t.items.length > 0 ? (CAT_MAP[t.items[0].category] || CAT_MAP['other']) : null;
@@ -1717,13 +1715,13 @@ function renderSummaryHTML() {
           <div>
             <div class="flex items-center justify-between text-sm" style="margin-bottom: 6px;">
               <span class="flex items-center gap-2">
-                <span class="badge badge-sm" style="background: var(--shared);">👥</span>
+                <span class="badge badge-sm" style="background: var(--purple);">👥</span>
                 Both
               </span>
               <span class="text-mono font-semibold">${formatAmt(sBoth, state.meta.currency)}</span>
             </div>
             <div class="progress-track" style="height: 10px; border-radius: 5px;">
-              <div class="progress-bar" style="width: ${(sBoth / maxPartner * 100)}%; background: var(--shared); border-radius: 5px;"></div>
+              <div class="progress-bar" style="width: ${(sBoth / maxPartner * 100)}%; background: var(--purple); border-radius: 5px;"></div>
             </div>
           </div>
         ` : ''}
@@ -1863,7 +1861,7 @@ function renderWeeklyChart(data) {
     <div class="chart-bar-row" style="animation: fadeInUp 0.4s ease ${i * 0.06}s both;">
       <span class="chart-bar-label">${d.label}</span>
       <div class="chart-bar-track">
-        <div class="chart-bar-fill" style="width: ${(d.value / maxVal * 100)}%; background: linear-gradient(90deg, var(--accent), var(--shared));"></div>
+        <div class="chart-bar-fill" style="width: ${(d.value / maxVal * 100)}%; background: linear-gradient(90deg, var(--accent), var(--purple));"></div>
       </div>
       <span class="chart-bar-value">${formatAmt(d.value, state.meta.currency)}</span>
     </div>
@@ -1878,7 +1876,7 @@ function renderItemChart(containerId, data, metric) {
     .slice(0, 5);
   const maxValue = Math.max(...ranked.map(item => Number(item[metric]) || 0), 1);
   const isSpend = metric === 'spent';
-  const color = isSpend ? 'var(--shared)' : 'var(--accent)';
+  const color = isSpend ? 'var(--purple)' : 'var(--accent)';
 
   container.innerHTML = ranked.map((item, index) => {
     const value = Number(item[metric]) || 0;
@@ -1888,7 +1886,7 @@ function renderItemChart(containerId, data, metric) {
     return `
       <div class="item-chart-row" style="animation: fadeInUp 0.35s ease ${index * 0.06}s both;">
         <span class="item-chart-label" title="${escHtml(item.name)}">${escHtml(item.name)}</span>
-        <div class="item-chart-track"><div class="item-chart-fill" style="width: ${(value / maxValue) * 100}%; background: linear-gradient(90deg, ${color}, ${isSpend ? 'var(--partner-b)' : 'var(--shared)'});"></div></div>
+        <div class="item-chart-track"><div class="item-chart-fill" style="width: ${(value / maxValue) * 100}%; background: linear-gradient(90deg, ${color}, ${isSpend ? 'var(--partner-b)' : 'var(--purple)'});"></div></div>
         <span class="item-chart-value">${display}</span>
       </div>
     `;
@@ -1993,7 +1991,7 @@ function renderAddExpenseModal() {
       <div class="flex gap-2" style="margin-bottom: 14px;">
         <button type="button" class="pill person-pill ${expenseForm.person === state.meta.partnerA ? 'active' : ''}" data-person="${escHtml(state.meta.partnerA)}" style="${expenseForm.person === state.meta.partnerA ? 'background: var(--partner-a-dim); border-color: var(--partner-a); color: var(--partner-a);' : ''}">${escHtml(state.meta.partnerA)}</button>
         <button type="button" class="pill person-pill ${expenseForm.person === state.meta.partnerB ? 'active' : ''}" data-person="${escHtml(state.meta.partnerB)}" style="${expenseForm.person === state.meta.partnerB ? 'background: var(--partner-b-dim); border-color: var(--partner-b); color: var(--partner-b);' : ''}">${escHtml(state.meta.partnerB)}</button>
-        <button type="button" class="pill person-pill ${expenseForm.person === 'Both' ? 'active' : ''}" data-person="Both" style="${expenseForm.person === 'Both' ? 'background: var(--shared-dim); border-color: var(--shared); color: var(--shared);' : ''}">Both</button>
+        <button type="button" class="pill person-pill ${expenseForm.person === 'Both' ? 'active' : ''}" data-person="Both" style="${expenseForm.person === 'Both' ? 'background: var(--purple-dim); border-color: var(--purple); color: var(--purple);' : ''}">Both</button>
       </div>
 
       <label class="label">Date</label>
@@ -2176,7 +2174,7 @@ function renderAddTopupModal() {
       <div class="flex gap-2" style="margin-bottom: 14px;">
         <button type="button" class="pill tu-person ${(isEdit ? txn.person : state.meta.partnerA) === state.meta.partnerA ? 'active' : ''}" data-person="${escHtml(state.meta.partnerA)}" style="${(isEdit ? txn.person : state.meta.partnerA) === state.meta.partnerA ? 'background: var(--partner-a-dim); border-color: var(--partner-a); color: var(--partner-a);' : ''}">${escHtml(state.meta.partnerA)}</button>
         <button type="button" class="pill tu-person ${(isEdit ? txn.person : '') === state.meta.partnerB ? 'active' : ''}" data-person="${escHtml(state.meta.partnerB)}" style="${(isEdit ? txn.person : '') === state.meta.partnerB ? 'background: var(--partner-b-dim); border-color: var(--partner-b); color: var(--partner-b);' : ''}">${escHtml(state.meta.partnerB)}</button>
-        <button type="button" class="pill tu-person ${(isEdit ? txn.person : '') === 'Both' ? 'active' : ''}" data-person="Both" style="${(isEdit ? txn.person : '') === 'Both' ? 'background: var(--shared-dim); border-color: var(--shared); color: var(--shared);' : ''}">Both</button>
+        <button type="button" class="pill tu-person ${(isEdit ? txn.person : '') === 'Both' ? 'active' : ''}" data-person="Both" style="${(isEdit ? txn.person : '') === 'Both' ? 'background: var(--purple-dim); border-color: var(--purple); color: var(--purple);' : ''}">Both</button>
       </div>
 
       <label class="label">Date</label>
@@ -2212,8 +2210,8 @@ function attachTopupFormEvents() {
         p.style.color = '';
       });
       btn.classList.add('active');
-      const color = topupPerson === state.meta.partnerA ? 'var(--partner-a)' : topupPerson === state.meta.partnerB ? 'var(--partner-b)' : 'var(--shared)';
-      const dim = topupPerson === state.meta.partnerA ? 'var(--partner-a-dim)' : topupPerson === state.meta.partnerB ? 'var(--partner-b-dim)' : 'var(--shared-dim)';
+      const color = topupPerson === state.meta.partnerA ? 'var(--partner-a)' : topupPerson === state.meta.partnerB ? 'var(--partner-b)' : 'var(--purple)';
+      const dim = topupPerson === state.meta.partnerA ? 'var(--partner-a-dim)' : topupPerson === state.meta.partnerB ? 'var(--partner-b-dim)' : 'var(--purple-dim)';
       btn.style.background = dim;
       btn.style.borderColor = color;
       btn.style.color = color;
