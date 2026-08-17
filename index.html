@@ -265,7 +265,7 @@ select.input-field option {
   font-weight: 600;
   border: 1.5px solid var(--border);
   color: var(--text-secondary);
-  transition: all 0.15s;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
   background: transparent;
   white-space: nowrap;
@@ -610,7 +610,7 @@ select.input-field option {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-secondary);
-  transition: all 0.2s;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   text-align: center;
 }
 .tab-btn.active {
@@ -723,6 +723,9 @@ select.input-field option {
 /* ── Smooth Content Transition ── */
 #app {
   transition: none;
+}
+#view-content {
+  will-change: opacity, transform;
 }
 
 @keyframes slideUp {
@@ -1493,6 +1496,7 @@ function renderMainApp() {
 }
 
 /* ── Surgical View Content Update (no full re-render) ── */
+let _viewTransitioning = false;
 function renderViewContent() {
   const isDashboard = state.view === 'dashboard';
   const viewContent = document.getElementById('view-content');
@@ -1504,21 +1508,47 @@ function renderViewContent() {
     btn.classList.toggle('active', isActive);
   });
 
-  // Replace only the view content
-  viewContent.innerHTML = isDashboard ? renderDashboardHTML() : renderSummaryHTML();
-
-  // Re-attach events for the new content
-  attachDashboardEvents();
-
-  // Render charts if summary
-  if (!isDashboard) {
-    setTimeout(() => {
-      renderDonutChart();
-      renderWeeklyChart();
-      renderItemChart('top-products', topProducts(), 'spend');
-      renderItemChart('top-categories', topCategories(), 'spend');
-    }, 10);
+  // Smooth crossfade transition
+  if (_viewTransitioning) {
+    // If already mid-transition, just swap instantly
+    viewContent.innerHTML = isDashboard ? renderDashboardHTML() : renderSummaryHTML();
+    attachDashboardEvents();
+    if (!isDashboard) renderChartsDeferred();
+    return;
   }
+
+  _viewTransitioning = true;
+  viewContent.style.transition = 'opacity 0.12s ease, transform 0.12s ease';
+  viewContent.style.opacity = '0.3';
+  viewContent.style.transform = 'translateY(4px)';
+
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      viewContent.innerHTML = isDashboard ? renderDashboardHTML() : renderSummaryHTML();
+      attachDashboardEvents();
+
+      // Fade in
+      viewContent.style.opacity = '1';
+      viewContent.style.transform = 'translateY(0)';
+
+      if (!isDashboard) renderChartsDeferred();
+
+      setTimeout(() => {
+        viewContent.style.transition = '';
+        viewContent.style.transform = '';
+        _viewTransitioning = false;
+      }, 140);
+    }, 100);
+  });
+}
+
+function renderChartsDeferred() {
+  setTimeout(() => {
+    renderDonutChart();
+    renderWeeklyChart();
+    renderItemChart('top-products', topProducts(), 'spend');
+    renderItemChart('top-categories', topCategories(), 'spend');
+  }, 10);
 }
 
 /* ── Dashboard HTML ── */
