@@ -724,13 +724,6 @@ select.input-field option {
 #app {
   transition: none;
 }
-#app > .container, #app > .onboarding {
-  animation: contentFadeIn 0.2s ease-out;
-}
-@keyframes contentFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
 
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(40px); }
@@ -890,6 +883,7 @@ select.input-field option {
     
     if (input.value === PASSCODE) {
       sessionStorage.setItem('spendsync_auth', 'true');
+      window.dispatchEvent(new Event('spendsync_unlocked'));
       if (navigator.vibrate) navigator.vibrate(50);
       gate.style.opacity = '0';
       gate.style.transition = 'opacity 0.3s ease';
@@ -1397,7 +1391,7 @@ function renderMainApp() {
       </div>
 
       <!-- Balance Card -->
-      <div class="balance-card animate-in">
+      <div class="balance-card">
         <div class="text-xs uppercase font-semibold" style="letter-spacing: 0.12em; color: var(--accent); opacity: 0.8;">
           Pot Balance
         </div>
@@ -1433,7 +1427,7 @@ function renderMainApp() {
       </div>
 
       ${budget > 0 ? `
-        <div class="glass animate-in stagger-1" style="padding: 16px; margin-bottom: 18px;">
+        <div class="glass" style="padding: 16px; margin-bottom: 18px;">
           <div class="flex items-center justify-between gap-3" style="margin-bottom: 8px;">
             <span class="text-sm font-semibold">This week's budget</span>
             <span class="text-xs text-mono" style="color: ${budgetLeft >= 0 ? 'var(--accent)' : 'var(--expense)'};">${budgetLeft >= 0 ? `${formatAmt(budgetLeft, state.meta.currency)} left` : `${formatAmt(Math.abs(budgetLeft), state.meta.currency)} over`}</span>
@@ -1446,13 +1440,13 @@ function renderMainApp() {
       ` : ''}
 
       <!-- Tab Navigation -->
-      <div class="tab-nav animate-in stagger-1">
+      <div class="tab-nav">
         <button class="tab-btn ${isDashboard ? 'active' : ''}" data-tab="dashboard">Dashboard</button>
         <button class="tab-btn ${!isDashboard ? 'active' : ''}" data-tab="summary">Summary</button>
       </div>
 
       <!-- View Content -->
-      <div id="view-content" class="animate-in stagger-2">
+      <div id="view-content">
         ${isDashboard ? renderDashboardHTML() : renderSummaryHTML()}
       </div>
     </div>
@@ -2570,6 +2564,10 @@ document.addEventListener('keydown', (event) => {
    INITIALIZATION
    ══════════════════════════════════════ */
 async function init() {
+  if (sessionStorage.getItem('spendsync_auth') !== 'true') {
+    await new Promise(resolve => window.addEventListener('spendsync_unlocked', resolve));
+  }
+
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(console.warn);
   }
