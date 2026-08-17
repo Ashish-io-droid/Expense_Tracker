@@ -1,4 +1,4 @@
-const CACHE_NAME = 'spendsync-v1';
+const CACHE_NAME = 'spendsync-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -7,17 +7,43 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
+  self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
 });
 
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+      );
+    }).then(() => self.clients.claim())
+  );
+});
+
 self.addEventListener('fetch', (e) => {
+  // Network-first strategy for navigation and HTML requests so users always get the latest version
+  if (e.request.mode === 'navigate' || e.request.url.includes('.html')) {
+    e.respondWith(
+      fetch(e.request).then((fetchRes) => {
+        return caches.open(CACHE_NAME).then((cache) => {
+          cache.put(e.request, fetchRes.clone());
+          return fetchRes;
+        });
+      }).catch(() => {
+        return caches.match(e.request).then((res) => res || caches.match('./index.html'));
+      })
+    );
+    return;
+  }
+
+  // Cache-first for other assets
   e.respondWith(
     caches.match(e.request).then((res) => {
       return res || fetch(e.request).then((fetchRes) => {
         return caches.open(CACHE_NAME).then((cache) => {
-          // Cache dynamic requests like chart.js or firebase optionally
           if (e.request.url.startsWith('http')) {
             cache.put(e.request, fetchRes.clone());
           }
