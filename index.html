@@ -199,6 +199,22 @@ select.input-field option {
   background: #171b2c;
   color: var(--text-primary);
 }
+input[type="file"]::file-selector-button {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  border-radius: var(--radius-xs);
+  margin-right: 12px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+input[type="file"]::file-selector-button:hover {
+  background: var(--bg-card-hover);
+}
 .label {
   display: block;
   font-size: 0.75rem;
