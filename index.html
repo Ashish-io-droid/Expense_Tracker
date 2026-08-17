@@ -1527,8 +1527,9 @@ function renderSummaryHTML() {
   const totalSpentInPeriod = txns.reduce((s, t) => s + (Number(t.total) || 0), 0);
   const txnCount = txns.length;
   const periodDays = daysInSelectedPeriod(txns);
+  const periodWeeks = Math.max(Math.ceil(periodDays / 7), 1);
   const dailyAverage = totalSpentInPeriod / periodDays;
-  const weeklyAverage = dailyAverage * 7;
+  const weeklyAverage = totalSpentInPeriod / periodWeeks;
   const largestTransaction = txnCount ? Math.max(...txns.map(t => Number(t.total) || 0)) : 0;
   const topCategory = catData[0] || null;
   const topItemBySpend = [...itemData].sort((a, b) => b.spent - a.spent)[0] || null;
