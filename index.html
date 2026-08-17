@@ -669,7 +669,7 @@ select.input-field option {
 
 /* ── Skeleton Loader ── */
 .skeleton-pulse {
-  background: linear-gradient(90deg, var(--surface) 0%, #272d42 50%, var(--surface) 100%);
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 100%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite linear;
 }
@@ -683,6 +683,53 @@ select.input-field option {
   padding-top: 20px; 
   padding-bottom: 100px;
   animation: fadeIn 0.3s ease-out;
+}
+
+/* ── Password Gate ── */
+.password-gate {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  animation: fadeIn 0.4s ease;
+}
+.password-card {
+  width: 100%;
+  max-width: 360px;
+  background: var(--bg-card);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 36px 28px;
+}
+.password-card .lock-icon {
+  font-size: 2.8rem;
+  margin-bottom: 16px;
+}
+.password-card .shake {
+  animation: shake 0.4s ease;
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+/* ── Smooth Content Transition ── */
+#app {
+  transition: none;
+}
+#app > .container, #app > .onboarding {
+  animation: contentFadeIn 0.2s ease-out;
+}
+@keyframes contentFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes slideUp {
@@ -776,9 +823,24 @@ select.input-field option {
 </style>
 </head>
 <body>
-  <div id="app">
+  <!-- Password Gate (shown first) -->
+  <div id="password-gate" class="password-gate" style="background: var(--bg-base);">
+    <div class="password-card">
+      <div class="lock-icon">🔐</div>
+      <div class="heading-lg" style="margin-bottom: 6px;">SpendSync</div>
+      <p class="text-sm text-muted" style="margin-bottom: 24px;">Enter the passcode to continue</p>
+      <form id="pw-form">
+        <input id="pw-input" class="input-field" type="password" placeholder="Enter passcode" autocomplete="off" autofocus style="text-align: center; font-size: 1.1rem; letter-spacing: 0.15em; margin-bottom: 14px;">
+        <div id="pw-error" class="text-xs" style="color: var(--expense); margin-bottom: 10px; display: none;">Incorrect passcode</div>
+        <button type="submit" class="btn btn-primary w-full">Unlock</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main App (hidden until authenticated) -->
+  <div id="app" style="display: none;">
     <!-- Initial Loading Skeleton -->
-    <div class="container skeleton-container">
+    <div id="skeleton-loader" class="container skeleton-container">
       <div style="display: flex; justify-content: space-between; margin-bottom: 28px;">
         <div>
           <div class="skeleton-pulse" style="width: 140px; height: 12px; border-radius: 6px; margin-bottom: 10px;"></div>
@@ -807,6 +869,48 @@ select.input-field option {
   </div>
 
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script>
+/* ── Password Gate Logic ── */
+(function() {
+  const PASSCODE = 'Sakash2311';
+  const gate = document.getElementById('password-gate');
+  const app = document.getElementById('app');
+
+  // Check if already authenticated this session
+  if (sessionStorage.getItem('spendsync_auth') === 'true') {
+    gate.style.display = 'none';
+    app.style.display = '';
+    return;
+  }
+
+  document.getElementById('pw-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const input = document.getElementById('pw-input');
+    const error = document.getElementById('pw-error');
+    
+    if (input.value === PASSCODE) {
+      sessionStorage.setItem('spendsync_auth', 'true');
+      if (navigator.vibrate) navigator.vibrate(50);
+      gate.style.opacity = '0';
+      gate.style.transition = 'opacity 0.3s ease';
+      setTimeout(function() {
+        gate.style.display = 'none';
+        app.style.display = '';
+        app.style.animation = 'fadeIn 0.4s ease';
+      }, 300);
+    } else {
+      error.style.display = 'block';
+      input.value = '';
+      const card = gate.querySelector('.password-card');
+      card.classList.remove('shake');
+      void card.offsetWidth;
+      card.classList.add('shake');
+      if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
+    }
+  });
+})();
+</script>
+
 <script type="module">
 /* ══════════════════════════════════════════════
    FIREBASE CONFIGURATION
@@ -2469,6 +2573,9 @@ async function init() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(console.warn);
   }
+
+  const skeletonStart = Date.now();
+
   // Load from localStorage first
   const local = loadLocal();
   if (local && local.meta) {
@@ -2502,6 +2609,20 @@ async function init() {
   }
 
   if (state.meta) resetExpenseForm();
+
+  // Ensure skeleton shows for at least 800ms
+  const elapsed = Date.now() - skeletonStart;
+  const remaining = Math.max(800 - elapsed, 0);
+  await new Promise(resolve => setTimeout(resolve, remaining));
+
+  // Fade out skeleton, then render
+  const skeleton = document.getElementById('skeleton-loader');
+  if (skeleton) {
+    skeleton.style.transition = 'opacity 0.25s ease';
+    skeleton.style.opacity = '0';
+    await new Promise(resolve => setTimeout(resolve, 250));
+  }
+
   render();
 }
 
