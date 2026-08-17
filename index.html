@@ -853,10 +853,18 @@ function formatAmt(n, sym) {
   const dec = parts[1];
   return `${sym}${grouped}${dec !== '00' ? '.' + dec : ''}`;
 }
-function monthKey(ds) { return ds.slice(0, 7); }
-function monthLabel(mk) {
-  const d = new Date(mk + '-01T00:00:00');
-  return d.toLocaleString('en-US', { month: 'short', year: '2-digit' });
+function getMonday(d) {
+  d = new Date(d);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.setDate(diff));
+}
+function weekKey(ds) { 
+  return dateKeyLocal(getMonday(ds + 'T00:00:00')); 
+}
+function weekLabel(wk) {
+  const d = new Date(wk + 'T00:00:00');
+  return 'Wk ' + d.toLocaleString('en-US', { month: 'short', day: 'numeric' });
 }
 function escHtml(s) {
   const d = document.createElement('div');
@@ -890,7 +898,7 @@ let state = {
   expandedTxnId: null,
   confirmDeleteId: null,
   filter: 'all',
-  summaryPeriod: 'month',
+  summaryPeriod: 'week',
 };
 
 /* ── Expense Form State ── */
@@ -1046,40 +1054,44 @@ function getItemBreakdown(txns) {
 function formatQuantity(value) {
   return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(Number(value) || 0);
 }
-function getMonthlySpending(txns) {
+function getWeeklySpending(txns) {
   const map = {};
   txns.forEach(t => {
     if (t.type !== 'expense') return;
-    const mk = monthKey(t.date);
-    map[mk] = (map[mk] || 0) + (Number(t.total) || 0);
+    const wk = weekKey(t.date);
+    map[wk] = (map[wk] || 0) + (Number(t.total) || 0);
   });
   return Object.entries(map)
     .sort((a, b) => a[0].localeCompare(b[0]))
     .slice(-6)
-    .map(([mk, value]) => ({ label: monthLabel(mk), value }));
+    .map(([wk, value]) => ({ label: weekLabel(wk), value }));
 }
 function getSummaryTxns() {
   const now = new Date();
-  const thisMonth = dateKeyLocal(now).slice(0, 7);
-  const lastDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const lastMonth = dateKeyLocal(lastDate).slice(0, 7);
+  const thisWeek = weekKey(dateKeyLocal(now));
+  const lastDate = new Date(now);
+  lastDate.setDate(now.getDate() - 7);
+  const lastWeek = weekKey(dateKeyLocal(lastDate));
   const expenses = getExpenses();
-  if (state.summaryPeriod === 'month') return expenses.filter(t => monthKey(t.date) === thisMonth);
-  if (state.summaryPeriod === 'last') return expenses.filter(t => monthKey(t.date) === lastMonth);
+  if (state.summaryPeriod === 'week') return expenses.filter(t => weekKey(t.date) === thisWeek);
+  if (state.summaryPeriod === 'last') return expenses.filter(t => weekKey(t.date) === lastWeek);
   return expenses;
 }
 
-function currentMonthSpent() {
-  const thisMonth = todayStr().slice(0, 7);
+function currentWeekSpent() {
+  const thisWeek = weekKey(todayStr());
   return getExpenses()
-    .filter(t => monthKey(t.date) === thisMonth)
+    .filter(t => weekKey(t.date) === thisWeek)
     .reduce((sum, t) => sum + (Number(t.total) || 0), 0);
 }
 
 function daysInSelectedPeriod(txns) {
   const now = new Date();
-  if (state.summaryPeriod === 'month') return Math.max(now.getDate(), 1);
-  if (state.summaryPeriod === 'last') return new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+  if (state.summaryPeriod === 'week') {
+    const day = now.getDay();
+    return Math.max(day === 0 ? 7 : day, 1);
+  }
+  if (state.summaryPeriod === 'last') return 7;
   if (!txns.length) return 1;
   const first = [...txns].sort((a, b) => a.date.localeCompare(b.date))[0].date;
   const firstDate = new Date(first + 'T00:00:00');
@@ -1155,7 +1167,7 @@ function renderOnboarding() {
       return;
     }
 
-    state.meta = { partnerA: a, partnerB: b, currency, monthlyBudget: 0, createdAt: todayStr() };
+    state.meta = { partnerA: a, partnerB: b, currency, weeklyBudget: 0, createdAt: todayStr() };
     state.transactions = [];
 
     if (pot > 0) {
@@ -1250,13 +1262,13 @@ function renderMainApp() {
       ${budget > 0 ? `
         <div class="glass animate-in stagger-1" style="padding: 16px; margin-bottom: 18px;">
           <div class="flex items-center justify-between gap-3" style="margin-bottom: 8px;">
-            <span class="text-sm font-semibold">This month's budget</span>
+            <span class="text-sm font-semibold">This week's budget</span>
             <span class="text-xs text-mono" style="color: ${budgetLeft >= 0 ? 'var(--accent)' : 'var(--expense)'};">${budgetLeft >= 0 ? `${formatAmt(budgetLeft, state.meta.currency)} left` : `${formatAmt(Math.abs(budgetLeft), state.meta.currency)} over`}</span>
           </div>
           <div class="progress-track" style="height: 8px; margin-bottom: 7px;">
             <div class="progress-bar" style="width: ${budgetPct}%; background: ${budgetLeft >= 0 ? 'var(--accent)' : 'var(--expense)'};"></div>
           </div>
-          <div class="flex items-center justify-between text-xs text-muted text-mono"><span>${formatAmt(monthSpent, state.meta.currency)} spent</span><span>of ${formatAmt(budget, state.meta.currency)}</span></div>
+          <div class="flex items-center justify-between text-xs text-muted text-mono"><span>${formatAmt(weekSpent, state.meta.currency)} spent</span><span>of ${formatAmt(budget, state.meta.currency)}</span></div>
         </div>
       ` : ''}
 
@@ -1511,7 +1523,7 @@ function renderSummaryHTML() {
   const allExpenses = getExpenses();
   const catData = getCategoryBreakdown(txns);
   const itemData = getItemBreakdown(txns);
-  const monthlyData = getMonthlySpending(allExpenses);
+  const weeklyData = getWeeklySpending(allExpenses);
   const totalSpentInPeriod = txns.reduce((s, t) => s + (Number(t.total) || 0), 0);
   const txnCount = txns.length;
   const periodDays = daysInSelectedPeriod(txns);
@@ -1522,13 +1534,13 @@ function renderSummaryHTML() {
   const topItemBySpend = [...itemData].sort((a, b) => b.spent - a.spent)[0] || null;
   const topItemByQuantity = [...itemData].sort((a, b) => b.quantity - a.quantity || b.purchases - a.purchases)[0] || null;
 
-  const periodLabels = { month: 'This Month', last: 'Last Month', all: 'All Time' };
+  const periodLabels = { week: 'This Week', last: 'Last Week', all: 'All Time' };
 
   let html = `
     <!-- Period Selector -->
     <div class="filter-scroll">
-      <button class="pill ${state.summaryPeriod === 'month' ? 'active' : ''}" data-period="month">This Month</button>
-      <button class="pill ${state.summaryPeriod === 'last' ? 'active' : ''}" data-period="last">Last Month</button>
+      <button class="pill ${state.summaryPeriod === 'week' ? 'active' : ''}" data-period="week">This Week</button>
+      <button class="pill ${state.summaryPeriod === 'last' ? 'active' : ''}" data-period="last">Last Week</button>
       <button class="pill ${state.summaryPeriod === 'all' ? 'active' : ''}" data-period="all">All Time</button>
     </div>
 
@@ -1679,12 +1691,12 @@ function renderSummaryHTML() {
     `;
   }
 
-  // Monthly Trend
-  if (monthlyData.length > 0) {
+  // Weekly Trend
+  if (weeklyData.length > 0) {
     html += `
       <div class="glass" style="padding: 20px; margin-bottom: 20px;">
-        <div class="heading-md" style="margin-bottom: 16px;">Monthly Trend</div>
-        <div id="monthly-chart"></div>
+        <div class="heading-md" style="margin-bottom: 16px;">Weekly Trend</div>
+        <div id="weekly-chart"></div>
       </div>
     `;
   }
@@ -1699,7 +1711,7 @@ function renderSummaryHTML() {
   // Defer chart rendering
   setTimeout(() => {
     renderDonutChart(catData, totalSpentInPeriod);
-    renderMonthlyChart(monthlyData);
+    renderWeeklyChart(weeklyData);
     renderItemChart('item-spend-chart', itemData, 'spent');
     renderItemChart('item-quantity-chart', itemData, 'quantity');
     attachSummaryEvents();
@@ -1788,8 +1800,8 @@ function renderDonutChart(data, total) {
   }
 }
 
-function renderMonthlyChart(data) {
-  const container = document.getElementById('monthly-chart');
+function renderWeeklyChart(data) {
+  const container = document.getElementById('weekly-chart');
   if (!container || !data.length) return;
   const maxVal = Math.max(...data.map(d => d.value), 1);
 
@@ -2208,8 +2220,8 @@ function renderSettingsModal() {
        <label class="label">Currency Symbol</label>
        <input id="set-currency" class="input-field input-field-mono" value="${escHtml(state.meta.currency)}" maxlength="3" style="width: 80px; text-align: center; margin-bottom: 18px;">
 
-       <label class="label">Monthly Spending Budget <span class="text-muted" style="font-weight: 400;">(optional)</span></label>
-       <input id="set-budget" class="input-field input-field-mono" type="number" min="0" step="0.01" inputmode="decimal" value="${Number(state.meta.monthlyBudget) || ''}" placeholder="0.00" style="margin-bottom: 18px;">
+       <label class="label">Weekly Spending Budget <span class="text-muted" style="font-weight: 400;">(optional)</span></label>
+       <input id="set-budget" class="input-field input-field-mono" type="number" min="0" step="0.01" inputmode="decimal" value="${Number(state.meta.weeklyBudget || state.meta.monthlyBudget) || ''}" placeholder="0.00" style="margin-bottom: 18px;">
 
       <button type="submit" class="btn btn-primary w-full" style="margin-bottom: 12px;">Save Changes</button>
     </form>
@@ -2243,7 +2255,7 @@ function attachSettingsEvents() {
     const a = document.getElementById('set-a')?.value.trim();
     const b = document.getElementById('set-b')?.value.trim();
     const currency = document.getElementById('set-currency')?.value.trim() || '₹';
-    const monthlyBudget = Math.max(Number(document.getElementById('set-budget')?.value) || 0, 0);
+    const weeklyBudget = Math.max(Number(document.getElementById('set-budget')?.value) || 0, 0);
     if (!a || !b) return;
 
     const oldA = state.meta.partnerA;
@@ -2252,7 +2264,8 @@ function attachSettingsEvents() {
     state.meta.partnerA = a;
     state.meta.partnerB = b;
     state.meta.currency = currency;
-    state.meta.monthlyBudget = monthlyBudget;
+    state.meta.weeklyBudget = weeklyBudget;
+    delete state.meta.monthlyBudget;
 
     // Migrate existing transactions if names changed
     let txnsUpdated = false;
