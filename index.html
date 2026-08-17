@@ -1464,7 +1464,7 @@ function renderMainApp() {
     btn.addEventListener('click', () => {
       haptic();
       state.view = btn.dataset.tab;
-      render();
+      renderViewContent();
     });
   });
 
@@ -1490,6 +1490,35 @@ function renderMainApp() {
   });
 
   attachDashboardEvents();
+}
+
+/* ── Surgical View Content Update (no full re-render) ── */
+function renderViewContent() {
+  const isDashboard = state.view === 'dashboard';
+  const viewContent = document.getElementById('view-content');
+  if (!viewContent) { render(); return; }
+
+  // Update tab active states in-place
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    const isActive = btn.dataset.tab === state.view;
+    btn.classList.toggle('active', isActive);
+  });
+
+  // Replace only the view content
+  viewContent.innerHTML = isDashboard ? renderDashboardHTML() : renderSummaryHTML();
+
+  // Re-attach events for the new content
+  attachDashboardEvents();
+
+  // Render charts if summary
+  if (!isDashboard) {
+    setTimeout(() => {
+      renderDonutChart();
+      renderWeeklyChart();
+      renderItemChart('top-products', topProducts(), 'spend');
+      renderItemChart('top-categories', topCategories(), 'spend');
+    }, 10);
+  }
 }
 
 /* ── Dashboard HTML ── */
@@ -1613,7 +1642,7 @@ function attachDashboardEvents() {
   document.querySelectorAll('[data-filter]').forEach(btn => {
     btn.addEventListener('click', () => {
       state.filter = btn.dataset.filter;
-      render();
+      renderViewContent();
     });
   });
 
@@ -1624,7 +1653,7 @@ function attachDashboardEvents() {
       const id = row.dataset.txnToggle;
       state.expandedTxnId = state.expandedTxnId === id ? null : id;
       state.confirmDeleteId = null;
-      render();
+      renderViewContent();
     });
   });
 
@@ -1666,7 +1695,7 @@ function attachDashboardEvents() {
   document.querySelectorAll('[data-delete-txn]').forEach(btn => {
     btn.addEventListener('click', () => {
       state.confirmDeleteId = btn.dataset.deleteTxn;
-      render();
+      renderViewContent();
     });
   });
   document.querySelectorAll('[data-confirm-delete]').forEach(btn => {
@@ -1674,13 +1703,13 @@ function attachDashboardEvents() {
       await removeTransaction(btn.dataset.confirmDelete);
       state.confirmDeleteId = null;
       state.expandedTxnId = null;
-      render();
+      renderViewContent();
     });
   });
   document.querySelectorAll('[data-cancel-delete]').forEach(btn => {
     btn.addEventListener('click', () => {
       state.confirmDeleteId = null;
-      render();
+      renderViewContent();
     });
   });
 }
@@ -1894,7 +1923,7 @@ function attachSummaryEvents() {
     btn.addEventListener('click', () => {
       haptic();
       state.summaryPeriod = btn.dataset.period;
-      render();
+      renderViewContent();
     });
   });
 
