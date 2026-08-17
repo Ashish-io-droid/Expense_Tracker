@@ -1817,7 +1817,9 @@ function attachDashboardEvents() {
   // Delete request
   document.querySelectorAll('[data-delete-txn]').forEach(btn => {
     btn.addEventListener('click', () => {
-      state.confirmDeleteId = btn.dataset.deleteTxn;
+      const id = btn.dataset.deleteTxn;
+      state.confirmDeleteId = id;
+      state.expandedTxnId = id; // Ensure it's expanded so confirm-bar shows
       renderViewContent();
     });
   });
