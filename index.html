@@ -1,0 +1,2398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SpendSync — Joint Expense Tracker</title>
+<meta name="description" content="Track shared expenses together. Add transactions, categorize spending, and analyze where your money goes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Sans:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════
+   DESIGN SYSTEM — Dark Glassmorphism Theme
+   ══════════════════════════════════════════════ */
+:root {
+  --bg-base: #080b16;
+  --bg-surface: #0f1221;
+  --bg-card: rgba(255,255,255,0.04);
+  --bg-card-hover: rgba(255,255,255,0.07);
+  --bg-elevated: rgba(255,255,255,0.06);
+  --bg-input: rgba(255,255,255,0.06);
+  --bg-modal: rgba(8,11,22,0.85);
+
+  --border: rgba(255,255,255,0.07);
+  --border-light: rgba(255,255,255,0.12);
+  --border-focus: rgba(110,231,183,0.5);
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
+  --text-inverse: #0f172a;
+
+  --accent: #6ee7b7;
+  --accent-dim: rgba(110,231,183,0.15);
+  --purple: #818cf8;
+  --purple-dim: rgba(129,140,248,0.15);
+  --expense: #f87171;
+  --expense-dim: rgba(248,113,113,0.15);
+  --topup: #34d399;
+  --topup-dim: rgba(52,211,153,0.15);
+
+  --partner-a: #f472b6;
+  --partner-a-dim: rgba(244,114,182,0.15);
+  --partner-b: #60a5fa;
+  --partner-b-dim: rgba(96,165,250,0.15);
+
+  --cat-food: #34d399;
+  --cat-snacks: #fbbf24;
+  --cat-daily: #60a5fa;
+  --cat-stationery: #a78bfa;
+  --cat-travel: #f472b6;
+  --cat-medical: #f87171;
+  --cat-entertainment: #fb923c;
+  --cat-clothing: #818cf8;
+  --cat-utilities: #22d3ee;
+  --cat-other: #94a3b8;
+
+  --radius: 18px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+  --radius-xs: 8px;
+  --radius-full: 9999px;
+
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-heading: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', monospace;
+
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.2);
+  --shadow-md: 0 8px 32px rgba(0,0,0,0.3);
+  --shadow-lg: 0 16px 48px rgba(0,0,0,0.4);
+  --shadow-glow: 0 0 40px rgba(110,231,183,0.1);
+}
+
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg-base);
+  color: var(--text-primary);
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--accent); color: var(--text-inverse); }
+input, select, textarea, button { font-family: inherit; font-size: inherit; }
+button { cursor: pointer; border: none; background: none; color: inherit; }
+a { color: var(--accent); text-decoration: none; }
+
+/* ── Background Gradient ── */
+#app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: linear-gradient(160deg, #080b16 0%, #0d1025 30%, #131638 60%, #0f1221 100%);
+  position: relative;
+}
+#app::before {
+  content: '';
+  position: fixed;
+  top: -50%;
+  right: -30%;
+  width: 80vw;
+  height: 80vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(110,231,183,0.04) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+#app::after {
+  content: '';
+  position: fixed;
+  bottom: -40%;
+  left: -20%;
+  width: 70vw;
+  height: 70vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(129,140,248,0.03) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Glass Card ── */
+.glass {
+  background: var(--bg-card);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.glass-elevated {
+  background: var(--bg-elevated);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+}
+
+/* ── Typography ── */
+.heading-xl { font-family: var(--font-heading); font-size: 1.75rem; font-weight: 700; line-height: 1.2; }
+.heading-lg { font-family: var(--font-heading); font-size: 1.35rem; font-weight: 700; line-height: 1.3; }
+.heading-md { font-family: var(--font-heading); font-size: 1.1rem; font-weight: 600; line-height: 1.3; }
+.text-sm { font-size: 0.875rem; }
+.text-xs { font-size: 0.75rem; }
+.text-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.text-muted { color: var(--text-secondary); }
+.text-accent { color: var(--accent); }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+.uppercase { text-transform: uppercase; letter-spacing: 0.1em; }
+
+/* ── Layout ── */
+.container { max-width: 480px; margin: 0 auto; padding: 0 16px; position: relative; z-index: 1; }
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-1 { gap: 4px; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.gap-4 { gap: 16px; }
+.w-full { width: 100%; }
+.flex-1 { flex: 1; }
+.shrink-0 { flex-shrink: 0; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Form Elements ── */
+.input-field {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg-input);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+.input-field:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+.input-field::placeholder { color: var(--text-muted); }
+.input-field-mono { font-family: var(--font-mono); }
+select.input-field {
+  appearance: none;
+  color-scheme: dark;
+  background-color: var(--bg-input);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8'%3E%3Cpath d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+select.input-field option {
+  background: #171b2c;
+  color: var(--text-primary);
+}
+.label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: transform 0.12s, box-shadow 0.2s, opacity 0.2s;
+  user-select: none;
+}
+.btn:active { transform: scale(0.96); }
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent) 0%, #34d399 100%);
+  color: var(--text-inverse);
+  box-shadow: 0 4px 16px rgba(110,231,183,0.25);
+}
+.btn-primary:hover { box-shadow: 0 6px 24px rgba(110,231,183,0.35); }
+.btn-ghost {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  color: var(--text-primary);
+}
+.btn-ghost:hover { background: var(--bg-card-hover); }
+.btn-danger {
+  background: var(--expense-dim);
+  color: var(--expense);
+  border: 1.5px solid rgba(248,113,113,0.2);
+}
+.btn-icon {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  transition: background 0.15s, transform 0.12s;
+}
+.btn-icon:hover { background: var(--bg-card-hover); }
+.btn-icon:active { transform: scale(0.9); }
+
+/* ── Pill / Chip ── */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1.5px solid var(--border);
+  color: var(--text-secondary);
+  transition: all 0.15s;
+  cursor: pointer;
+  background: transparent;
+  white-space: nowrap;
+}
+.pill.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.pill:not(.active):hover { background: var(--bg-card-hover); }
+
+/* ── Badge ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-full);
+  font-size: 0.65rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: #fff;
+  flex-shrink: 0;
+}
+.badge-sm { width: 20px; height: 20px; font-size: 0.55rem; }
+.cat-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+/* ── FAB ── */
+.fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 22px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--accent) 0%, #34d399 100%);
+  color: var(--text-inverse);
+  font-weight: 700;
+  font-size: 0.9rem;
+  box-shadow: 0 8px 32px rgba(110,231,183,0.3), 0 0 60px rgba(110,231,183,0.1);
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+.fab:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(110,231,183,0.4); }
+.fab:active { transform: scale(0.95); }
+.fab svg { width: 20px; height: 20px; }
+
+/* ── Modal Overlay ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--bg-modal);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+@media (min-width: 480px) {
+  .modal-overlay { align-items: center; padding: 24px; }
+}
+.modal-content {
+  width: 100%;
+  max-width: 480px;
+  max-height: 92vh;
+  max-height: 92dvh;
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 24px;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (min-width: 480px) {
+  .modal-content { border-radius: var(--radius); }
+}
+.modal-content::-webkit-scrollbar { width: 4px; }
+.modal-content::-webkit-scrollbar-track { background: transparent; }
+.modal-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ── Transaction Row ── */
+.txn-row {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.txn-row:last-child { border-bottom: none; }
+.txn-row:hover { background: var(--bg-card-hover); margin: 0 -16px; padding: 14px 16px; border-radius: var(--radius-sm); }
+.txn-item-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border-radius: var(--radius-xs);
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+}
+.txn-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Item Row (in form) ── */
+.item-form-row {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  margin-bottom: 10px;
+  position: relative;
+  animation: fadeInUp 0.25s ease;
+}
+.item-form-row .remove-item {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--expense-dim);
+  color: var(--expense);
+  font-size: 1rem;
+  line-height: 1;
+  transition: background 0.15s, transform 0.12s;
+}
+.item-form-row .remove-item:hover { background: rgba(248,113,113,0.25); }
+.item-form-row .remove-item:active { transform: scale(0.85); }
+.item-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+.item-form-total {
+  margin-top: 8px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
+/* ── Balance Card ── */
+.balance-card {
+  background: linear-gradient(135deg, rgba(110,231,183,0.08) 0%, rgba(129,140,248,0.05) 100%);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(110,231,183,0.12);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.balance-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -30%;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(110,231,183,0.08) 0%, transparent 70%);
+}
+.balance-amount {
+  font-family: var(--font-mono);
+  font-size: 2.2rem;
+  font-weight: 700;
+  line-height: 1.1;
+  margin: 6px 0 4px;
+}
+.balance-positive { color: var(--accent); }
+.balance-negative { color: var(--expense); }
+
+/* ── Progress Bar ── */
+.progress-track {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-card);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+.progress-bar {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.payer-breakdown {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.payer-breakdown-item { min-width: 0; }
+.payer-breakdown-item .text-mono { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Charts ── */
+.chart-donut-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px 0;
+}
+.chart-donut-container svg { overflow: visible; }
+.chart-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.chart-bar-label {
+  width: 60px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-align: right;
+  flex-shrink: 0;
+}
+.chart-bar-track {
+  flex: 1;
+  height: 24px;
+  background: var(--bg-card);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  position: relative;
+}
+.chart-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-xs);
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  min-width: 2px;
+}
+.chart-bar-value {
+  width: 70px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+/* ── Category Legend ── */
+.cat-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.cat-legend-row:last-child { border-bottom: none; }
+.cat-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+/* ── Summary Stat Card ── */
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  flex: 1;
+}
+.summary-stat-grid, .insight-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.summary-stat-grid .stat-card, .insight-grid .stat-card { min-width: 0; }
+.insight-tile {
+  min-width: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+.insight-value {
+  margin-top: 5px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.insight-detail { margin-top: 3px; color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.75rem; }
+.item-chart-row {
+  display: grid;
+  grid-template-columns: minmax(74px, 0.9fr) minmax(80px, 1.6fr) auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 11px;
+}
+.item-chart-row:last-child { margin-bottom: 0; }
+.item-chart-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.item-chart-track { height: 10px; overflow: hidden; border-radius: var(--radius-full); background: var(--bg-card); }
+.item-chart-fill { height: 100%; border-radius: inherit; min-width: 3px; transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
+.item-chart-value { color: var(--text-primary); font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
+
+/* ── Tab Nav ── */
+.tab-nav {
+  display: flex;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 3px;
+  margin-bottom: 20px;
+}
+.tab-btn {
+  flex: 1;
+  padding: 9px 16px;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  text-align: center;
+}
+.tab-btn.active {
+  background: var(--accent);
+  color: var(--text-inverse);
+  box-shadow: 0 2px 8px rgba(110,231,183,0.3);
+}
+
+/* ── Onboarding ── */
+.onboarding {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+.onboarding-card {
+  width: 100%;
+  max-width: 400px;
+  text-align: left;
+}
+.onboarding-logo {
+  font-size: 2.5rem;
+  margin-bottom: 8px;
+}
+
+/* ── Empty State ── */
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-muted);
+}
+.empty-state-icon { font-size: 3rem; margin-bottom: 12px; opacity: 0.5; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ── Animations ── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-in { animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+
+/* ── Confirm Banner ── */
+.confirm-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--expense-dim);
+  border: 1px solid rgba(248,113,113,0.2);
+  border-radius: var(--radius-sm);
+  margin-top: 10px;
+  animation: fadeInUp 0.2s ease;
+}
+
+/* ── Divider ── */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
+
+/* ── Date Group ── */
+.date-group-header {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  padding: 16px 0 6px;
+}
+
+/* ── Filter Scroll ── */
+.filter-scroll {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin-bottom: 16px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.filter-scroll::-webkit-scrollbar { display: none; }
+
+/* ── Responsive helpers ── */
+@media (max-width: 420px) {
+  .container { padding: 0 12px; }
+  .modal-content { padding: 20px 16px calc(28px + env(safe-area-inset-bottom)); }
+  .item-form-grid > div:first-child { grid-column: 1 / -1; }
+  .summary-stat-grid, .insight-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .summary-stat-grid .stat-card:last-child { grid-column: 1 / -1; }
+  .insight-grid > :last-child { grid-column: 1 / -1; }
+  .stat-card, .insight-tile { padding: 12px; }
+  .txn-actions { flex-wrap: wrap; }
+  .fab { right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); padding: 13px 18px; }
+  .payer-breakdown { gap: 5px; }
+}
+@media (max-width: 380px) {
+  .balance-amount { font-size: 1.8rem; }
+  .item-chart-row { grid-template-columns: minmax(62px, 0.9fr) minmax(64px, 1.4fr) auto; gap: 7px; }
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="module">
+/* ══════════════════════════════════════════════
+   FIREBASE CONFIGURATION
+   ══════════════════════════════════════════════
+   To enable cloud sync:
+   1. Go to https://console.firebase.google.com
+   2. Create a new project
+   3. Add a web app and copy the config below
+   4. Enable Firestore Database (start in Test Mode)
+   5. Replace the placeholder values below
+   ══════════════════════════════════════════════ */
+
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDQEsEGFVWRvICLibzLDyQtFUiuxbdn7Aw",
+  authDomain: "expensetracker-dfa1b.firebaseapp.com",
+  projectId: "expensetracker-dfa1b",
+  storageBucket: "expensetracker-dfa1b.firebasestorage.app",
+  messagingSenderId: "371902643594",
+  appId: "1:371902643594:web:bf0c1200f3ebc276001c73",
+  measurementId: "G-6VF752HCVS"
+};
+
+const USE_FIREBASE = FIREBASE_CONFIG.apiKey !== "";
+
+let db = null;
+let firebaseModules = null;
+
+async function initFirebase() {
+  if (!USE_FIREBASE) return;
+  try {
+    const appMod = await import('https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js');
+    const fsMod = await import('https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js');
+    const app = appMod.initializeApp(FIREBASE_CONFIG);
+    db = fsMod.getFirestore(app);
+    firebaseModules = fsMod;
+    console.log('✅ Firebase connected');
+    return true;
+  } catch (e) {
+    console.warn('Firebase init failed, using localStorage', e);
+    return false;
+  }
+}
+
+/* ══════════════════════════════════════
+   CONSTANTS
+   ══════════════════════════════════════ */
+const STORAGE_KEY = 'spendsync-v2';
+
+const CATEGORIES = [
+  { id: 'food',          name: 'Food',          emoji: '🍕', color: 'var(--cat-food)' },
+  { id: 'snacks',        name: 'Snacks',        emoji: '🍿', color: 'var(--cat-snacks)' },
+  { id: 'daily',         name: 'Daily Use',     emoji: '🧴', color: 'var(--cat-daily)' },
+  { id: 'stationery',    name: 'Stationery',    emoji: '📝', color: 'var(--cat-stationery)' },
+  { id: 'travel',        name: 'Travel',        emoji: '🚗', color: 'var(--cat-travel)' },
+  { id: 'medical',       name: 'Medical',       emoji: '💊', color: 'var(--cat-medical)' },
+  { id: 'entertainment', name: 'Entertainment', emoji: '🎬', color: 'var(--cat-entertainment)' },
+  { id: 'clothing',      name: 'Clothing',      emoji: '👗', color: 'var(--cat-clothing)' },
+  { id: 'utilities',     name: 'Utilities',     emoji: '💡', color: 'var(--cat-utilities)' },
+  { id: 'other',         name: 'Other',         emoji: '📦', color: 'var(--cat-other)' },
+];
+
+const CAT_MAP = {};
+CATEGORIES.forEach(c => CAT_MAP[c.id] = c);
+
+/* ══════════════════════════════════════
+   UTILITIES
+   ══════════════════════════════════════ */
+function genId() {
+  return 't_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+}
+function dateKeyLocal(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+function todayStr() {
+  return dateKeyLocal();
+}
+function formatDate(ds) {
+  const d = new Date(ds + 'T00:00:00');
+  const day = d.getDate();
+  const mon = d.toLocaleString('en-US', { month: 'short' });
+  const yr = d.getFullYear();
+  const now = new Date().getFullYear();
+  return yr === now ? `${day} ${mon}` : `${day} ${mon} '${String(yr).slice(2)}`;
+}
+function formatDateLong(ds) {
+  const d = new Date(ds + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+}
+function formatAmt(n, sym) {
+  const num = Math.abs(Number(n) || 0);
+  const parts = num.toFixed(2).split('.');
+  let intPart = parts[0];
+  let grouped;
+  if (sym === '₹') {
+    const last3 = intPart.slice(-3);
+    const other = intPart.slice(0, -3);
+    grouped = other !== '' ? other.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + last3 : last3;
+  } else {
+    grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+  const dec = parts[1];
+  return `${sym}${grouped}${dec !== '00' ? '.' + dec : ''}`;
+}
+function monthKey(ds) { return ds.slice(0, 7); }
+function monthLabel(mk) {
+  const d = new Date(mk + '-01T00:00:00');
+  return d.toLocaleString('en-US', { month: 'short', year: '2-digit' });
+}
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+/* SVG Icons */
+const ICONS = {
+  plus: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+  x: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+  settings: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>`,
+  edit: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>`,
+  trash: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`,
+  refresh: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>`,
+  chevDown: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`,
+  chevUp: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>`,
+  download: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
+};
+
+/* ══════════════════════════════════════
+   STATE
+   ══════════════════════════════════════ */
+let state = {
+  meta: null,
+  transactions: [],
+  view: 'dashboard',
+  modal: null,       // null | 'add-expense' | 'add-topup' | 'settings' | 'detail'
+  editingTxn: null,
+  detailTxnId: null,
+  expandedTxnId: null,
+  confirmDeleteId: null,
+  filter: 'all',
+  summaryPeriod: 'month',
+};
+
+/* ── Expense Form State ── */
+let expenseForm = {
+  name: '',
+  person: '',
+  date: todayStr(),
+  items: [{ product: '', category: 'food', quantity: 1, pricePerUnit: '', total: 0 }],
+};
+
+function resetExpenseForm() {
+  expenseForm = {
+    name: '',
+    person: state.meta?.partnerA || '',
+    date: todayStr(),
+    items: [{ product: '', category: 'food', quantity: 1, pricePerUnit: '', total: 0 }],
+  };
+}
+
+/* ══════════════════════════════════════
+   STORAGE (localStorage + Firebase)
+   ══════════════════════════════════════ */
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+function saveLocal(data) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+}
+function persistAll() {
+  const data = { meta: state.meta, transactions: state.transactions };
+  saveLocal(data);
+  if (USE_FIREBASE && db && firebaseModules) {
+    const { doc, setDoc, collection } = firebaseModules;
+    setDoc(doc(db, 'config', 'meta'), state.meta).catch(console.warn);
+    state.transactions.forEach(txn => {
+      setDoc(doc(db, 'transactions', txn.id), txn).catch(console.warn);
+    });
+  }
+}
+async function persistTransaction(txn) {
+  saveLocal({ meta: state.meta, transactions: state.transactions });
+  if (USE_FIREBASE && db && firebaseModules) {
+    const { doc, setDoc } = firebaseModules;
+    await setDoc(doc(db, 'transactions', txn.id), txn).catch(console.warn);
+  }
+}
+async function removeTransaction(id) {
+  state.transactions = state.transactions.filter(t => t.id !== id);
+  saveLocal({ meta: state.meta, transactions: state.transactions });
+  if (USE_FIREBASE && db && firebaseModules) {
+    const { doc, deleteDoc } = firebaseModules;
+    await deleteDoc(doc(db, 'transactions', id)).catch(console.warn);
+  }
+}
+async function persistMeta() {
+  saveLocal({ meta: state.meta, transactions: state.transactions });
+  if (USE_FIREBASE && db && firebaseModules) {
+    const { doc, setDoc } = firebaseModules;
+    await setDoc(doc(db, 'config', 'meta'), state.meta).catch(console.warn);
+  }
+}
+
+function startFirebaseSync() {
+  if (!USE_FIREBASE || !db || !firebaseModules) return;
+  const { collection, onSnapshot, query, doc } = firebaseModules;
+
+  onSnapshot(doc(db, 'config', 'meta'), (snap) => {
+    if (snap.exists()) {
+      const remote = snap.data();
+      if (JSON.stringify(remote) !== JSON.stringify(state.meta)) {
+        state.meta = remote;
+        render();
+      }
+    }
+  });
+
+  onSnapshot(query(collection(db, 'transactions')), (snap) => {
+    const remote = [];
+    snap.forEach(d => remote.push(d.data()));
+    if (JSON.stringify(remote) !== JSON.stringify(state.transactions)) {
+      state.transactions = remote;
+      render();
+    }
+  });
+}
+
+/* ══════════════════════════════════════
+   COMPUTED HELPERS
+   ══════════════════════════════════════ */
+function getExpenses() {
+  return state.transactions.filter(t => t.type === 'expense');
+}
+function getTopups() {
+  return state.transactions.filter(t => t.type === 'topup');
+}
+function totalInvested() {
+  return getTopups().reduce((s, t) => s + (Number(t.total) || 0), 0);
+}
+function totalSpent() {
+  return getExpenses().reduce((s, t) => s + (Number(t.total) || 0), 0);
+}
+function balance() {
+  return totalInvested() - totalSpent();
+}
+function spentBy(person) {
+  return getExpenses().filter(t => t.person === person).reduce((s, t) => s + (Number(t.total) || 0), 0);
+}
+function filteredTransactions() {
+  let list = [...state.transactions];
+  if (state.filter === 'expenses') list = list.filter(t => t.type === 'expense');
+  else if (state.filter === 'topups') list = list.filter(t => t.type === 'topup');
+  else if (state.filter === 'A') list = list.filter(t => t.person === state.meta.partnerA);
+  else if (state.filter === 'B') list = list.filter(t => t.person === state.meta.partnerB);
+  else if (state.filter === 'both') list = list.filter(t => t.person === 'Both');
+  return list.sort((a, b) => {
+    if (a.date !== b.date) return a.date > b.date ? -1 : 1;
+    return (b.createdAt || 0) - (a.createdAt || 0);
+  });
+}
+function getCategoryBreakdown(txns) {
+  const map = {};
+  txns.forEach(t => {
+    if (t.type !== 'expense' || !t.items) return;
+    t.items.forEach(item => {
+      const cat = item.category || 'other';
+      map[cat] = (map[cat] || 0) + (Number(item.total) || 0);
+    });
+  });
+  return Object.entries(map)
+    .map(([id, value]) => ({ ...CAT_MAP[id], value }))
+    .sort((a, b) => b.value - a.value);
+}
+function getItemBreakdown(txns) {
+  const items = new Map();
+  txns.forEach(txn => {
+    if (txn.type !== 'expense') return;
+    (txn.items || []).forEach(item => {
+      const fallback = CAT_MAP[item.category || 'other']?.name || 'Item';
+      const name = String(item.product || fallback).trim().replace(/\s+/g, ' ') || fallback;
+      const key = name.toLocaleLowerCase();
+      const current = items.get(key) || { name, spent: 0, quantity: 0, purchases: 0 };
+      current.spent += Number(item.total) || 0;
+      current.quantity += Number(item.quantity) || 0;
+      current.purchases += 1;
+      items.set(key, current);
+    });
+  });
+  return [...items.values()];
+}
+function formatQuantity(value) {
+  return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(Number(value) || 0);
+}
+function getMonthlySpending(txns) {
+  const map = {};
+  txns.forEach(t => {
+    if (t.type !== 'expense') return;
+    const mk = monthKey(t.date);
+    map[mk] = (map[mk] || 0) + (Number(t.total) || 0);
+  });
+  return Object.entries(map)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .slice(-6)
+    .map(([mk, value]) => ({ label: monthLabel(mk), value }));
+}
+function getSummaryTxns() {
+  const now = new Date();
+  const thisMonth = dateKeyLocal(now).slice(0, 7);
+  const lastDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonth = dateKeyLocal(lastDate).slice(0, 7);
+  const expenses = getExpenses();
+  if (state.summaryPeriod === 'month') return expenses.filter(t => monthKey(t.date) === thisMonth);
+  if (state.summaryPeriod === 'last') return expenses.filter(t => monthKey(t.date) === lastMonth);
+  return expenses;
+}
+
+function currentMonthSpent() {
+  const thisMonth = todayStr().slice(0, 7);
+  return getExpenses()
+    .filter(t => monthKey(t.date) === thisMonth)
+    .reduce((sum, t) => sum + (Number(t.total) || 0), 0);
+}
+
+function daysInSelectedPeriod(txns) {
+  const now = new Date();
+  if (state.summaryPeriod === 'month') return Math.max(now.getDate(), 1);
+  if (state.summaryPeriod === 'last') return new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+  if (!txns.length) return 1;
+  const first = [...txns].sort((a, b) => a.date.localeCompare(b.date))[0].date;
+  const firstDate = new Date(first + 'T00:00:00');
+  return Math.max(Math.floor((now - firstDate) / 86400000) + 1, 1);
+}
+
+/* ══════════════════════════════════════
+   RENDER ENGINE
+   ══════════════════════════════════════ */
+const $app = document.getElementById('app');
+
+function render() {
+  if (!state.meta) {
+    renderOnboarding();
+  } else {
+    renderMainApp();
+  }
+}
+
+/* ── Onboarding ── */
+function renderOnboarding() {
+  $app.innerHTML = `
+    <div class="onboarding">
+      <div class="onboarding-card glass-elevated animate-in" style="padding: 32px;">
+        <div class="onboarding-logo">💸</div>
+        <div class="heading-xl" style="margin-bottom: 4px;">SpendSync</div>
+        <p class="text-sm text-muted" style="margin-bottom: 28px; line-height: 1.5;">
+          Track every rupee, together. Set up your joint expense tracker in seconds.
+        </p>
+
+        <form id="onboard-form">
+          <label class="label">Your name</label>
+          <input id="ob-a" class="input-field" placeholder="e.g. Ashish" style="margin-bottom: 14px;" required>
+
+          <label class="label">Partner's name</label>
+          <input id="ob-b" class="input-field" placeholder="e.g. Priya" style="margin-bottom: 14px;" required>
+
+          <div class="flex gap-3" style="margin-bottom: 14px;">
+            <div class="flex-1">
+              <label class="label">Starting pot</label>
+              <input id="ob-pot" class="input-field input-field-mono" type="number" min="0" step="0.01" placeholder="0.00" inputmode="decimal">
+            </div>
+            <div style="width: 80px;">
+              <label class="label">Currency</label>
+              <input id="ob-currency" class="input-field input-field-mono" value="₹" maxlength="3" style="text-align: center;">
+            </div>
+          </div>
+
+          <div id="ob-error" class="text-xs" style="color: var(--expense); margin-bottom: 10px; display: none;"></div>
+
+          <button type="submit" class="btn btn-primary w-full" style="margin-top: 8px;">
+            🚀 Start Tracking
+          </button>
+        </form>
+      </div>
+      <p class="text-xs text-muted" style="margin-top: 20px; opacity: 0.5;">
+        ${USE_FIREBASE ? '☁️ Cloud sync enabled' : '💾 Data saved locally in your browser'}
+      </p>
+    </div>
+  `;
+
+  document.getElementById('onboard-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const a = document.getElementById('ob-a').value.trim();
+    const b = document.getElementById('ob-b').value.trim();
+    const pot = Number(document.getElementById('ob-pot').value) || 0;
+    const currency = document.getElementById('ob-currency').value.trim() || '₹';
+
+    if (!a || !b) {
+      const err = document.getElementById('ob-error');
+      err.textContent = 'Please enter both names.';
+      err.style.display = 'block';
+      return;
+    }
+
+    state.meta = { partnerA: a, partnerB: b, currency, monthlyBudget: 0, createdAt: todayStr() };
+    state.transactions = [];
+
+    if (pot > 0) {
+      const topup = {
+        id: genId(), type: 'topup', name: 'Starting Pot',
+        person: 'Both', date: todayStr(), items: [],
+        total: pot, createdAt: Date.now(),
+      };
+      state.transactions.push(topup);
+    }
+
+    persistAll();
+    startFirebaseSync();
+    resetExpenseForm();
+    render();
+  });
+}
+
+/* ── Main App ── */
+function renderMainApp() {
+  const bal = balance();
+  const invested = totalInvested();
+  const spent = totalSpent();
+  const sA = spentBy(state.meta.partnerA);
+  const sB = spentBy(state.meta.partnerB);
+  const sBoth = spentBy('Both');
+  const spentTotal = sA + sB + sBoth;
+  const pctA = spentTotal > 0 ? (sA / spentTotal * 100) : 0;
+  const pctB = spentTotal > 0 ? (sB / spentTotal * 100) : 0;
+  const pctBoth = spentTotal > 0 ? (sBoth / spentTotal * 100) : 0;
+  const budget = Number(state.meta.monthlyBudget) || 0;
+  const monthSpent = currentMonthSpent();
+  const budgetPct = budget > 0 ? Math.min((monthSpent / budget) * 100, 100) : 0;
+  const budgetLeft = budget - monthSpent;
+
+  const isDashboard = state.view === 'dashboard';
+
+  $app.innerHTML = `
+    <div class="container" style="padding-top: 20px; padding-bottom: 100px;">
+      <!-- Header -->
+      <div class="flex items-center justify-between" style="margin-bottom: 20px;">
+        <div>
+          <div class="text-xs uppercase text-muted font-semibold" style="letter-spacing: 0.12em; opacity: 0.6;">
+            Joint Tracker · est. ${formatDate(state.meta.createdAt)}
+          </div>
+          <h1 class="heading-lg" style="margin-top: 2px;">
+            ${escHtml(state.meta.partnerA)} & ${escHtml(state.meta.partnerB)}
+          </h1>
+        </div>
+        <div class="flex gap-1">
+          <button class="btn-icon" id="btn-refresh" title="Refresh" aria-label="Refresh saved data">${ICONS.refresh}</button>
+          <button class="btn-icon" id="btn-settings" title="Settings" aria-label="Open settings">${ICONS.settings}</button>
+        </div>
+      </div>
+
+      <!-- Balance Card -->
+      <div class="balance-card animate-in">
+        <div class="text-xs uppercase font-semibold" style="letter-spacing: 0.12em; color: var(--accent); opacity: 0.8;">
+          Pot Balance
+        </div>
+        <div class="balance-amount ${bal >= 0 ? 'balance-positive' : 'balance-negative'}">
+          ${bal < 0 ? '−' : ''}${formatAmt(bal, state.meta.currency)}
+        </div>
+        <div class="text-xs text-muted text-mono" style="margin-bottom: 16px;">
+          Invested ${formatAmt(invested, state.meta.currency)} · Spent ${formatAmt(spent, state.meta.currency)}
+        </div>
+        ${spentTotal > 0 ? `
+          <div class="payer-breakdown text-xs">
+            <span class="payer-breakdown-item flex items-center gap-2">
+              <span class="badge badge-sm" style="background: var(--partner-a);">${state.meta.partnerA[0]}</span>
+              <span class="text-mono">${formatAmt(sA, state.meta.currency)}</span>
+            </span>
+            <span class="payer-breakdown-item flex items-center gap-2">
+              <span class="badge badge-sm" style="background: var(--purple);">👥</span>
+              <span class="text-mono">${formatAmt(sBoth, state.meta.currency)}</span>
+            </span>
+            <span class="payer-breakdown-item flex items-center gap-2" style="justify-content: flex-end;">
+              <span class="text-mono">${formatAmt(sB, state.meta.currency)}</span>
+              <span class="badge badge-sm" style="background: var(--partner-b);">${state.meta.partnerB[0]}</span>
+            </span>
+          </div>
+          <div class="progress-track">
+            <div class="flex" style="height: 100%;">
+              <div class="progress-bar" style="width: ${pctA}%; background: var(--partner-a);"></div>
+              <div class="progress-bar" style="width: ${pctBoth}%; background: var(--purple);"></div>
+              <div class="progress-bar" style="width: ${pctB}%; background: var(--partner-b);"></div>
+            </div>
+          </div>
+        ` : `<div class="text-xs text-muted">No expenses recorded yet.</div>`}
+      </div>
+
+      ${budget > 0 ? `
+        <div class="glass animate-in stagger-1" style="padding: 16px; margin-bottom: 18px;">
+          <div class="flex items-center justify-between gap-3" style="margin-bottom: 8px;">
+            <span class="text-sm font-semibold">This month's budget</span>
+            <span class="text-xs text-mono" style="color: ${budgetLeft >= 0 ? 'var(--accent)' : 'var(--expense)'};">${budgetLeft >= 0 ? `${formatAmt(budgetLeft, state.meta.currency)} left` : `${formatAmt(Math.abs(budgetLeft), state.meta.currency)} over`}</span>
+          </div>
+          <div class="progress-track" style="height: 8px; margin-bottom: 7px;">
+            <div class="progress-bar" style="width: ${budgetPct}%; background: ${budgetLeft >= 0 ? 'var(--accent)' : 'var(--expense)'};"></div>
+          </div>
+          <div class="flex items-center justify-between text-xs text-muted text-mono"><span>${formatAmt(monthSpent, state.meta.currency)} spent</span><span>of ${formatAmt(budget, state.meta.currency)}</span></div>
+        </div>
+      ` : ''}
+
+      <!-- Tab Navigation -->
+      <div class="tab-nav animate-in stagger-1">
+        <button class="tab-btn ${isDashboard ? 'active' : ''}" data-tab="dashboard">Dashboard</button>
+        <button class="tab-btn ${!isDashboard ? 'active' : ''}" data-tab="summary">Summary</button>
+      </div>
+
+      <!-- View Content -->
+      <div id="view-content" class="animate-in stagger-2">
+        ${isDashboard ? renderDashboardHTML() : renderSummaryHTML()}
+      </div>
+    </div>
+
+    <!-- FAB -->
+    <button class="fab" id="fab-add">
+      ${ICONS.plus} Add Expense
+    </button>
+
+    <!-- Modals -->
+    <div id="modal-root"></div>
+  `;
+
+  // Attach events
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.view = btn.dataset.tab;
+      render();
+    });
+  });
+
+  document.getElementById('btn-settings').addEventListener('click', () => {
+    state.modal = 'settings';
+    renderModal();
+  });
+
+  document.getElementById('btn-refresh').addEventListener('click', () => {
+    const btn = document.getElementById('btn-refresh');
+    btn.querySelector('svg').style.animation = 'spin 0.6s linear';
+    const data = loadLocal();
+    if (data) { state.meta = data.meta; state.transactions = data.transactions || []; }
+    setTimeout(() => { btn.querySelector('svg').style.animation = 'none'; render(); }, 500);
+  });
+
+  document.getElementById('fab-add').addEventListener('click', () => {
+    state.editingTxn = null;
+    resetExpenseForm();
+    state.modal = 'add-expense';
+    renderModal();
+  });
+
+  attachDashboardEvents();
+}
+
+/* ── Dashboard HTML ── */
+function renderDashboardHTML() {
+  const txns = filteredTransactions();
+
+  let filtersHTML = `
+    <div class="filter-scroll">
+      <button class="pill ${state.filter === 'all' ? 'active' : ''}" data-filter="all">All</button>
+      <button class="pill ${state.filter === 'A' ? 'active' : ''}" data-filter="A">${escHtml(state.meta.partnerA)}</button>
+      <button class="pill ${state.filter === 'B' ? 'active' : ''}" data-filter="B">${escHtml(state.meta.partnerB)}</button>
+      <button class="pill ${state.filter === 'both' ? 'active' : ''}" data-filter="both">Both</button>
+      <button class="pill ${state.filter === 'expenses' ? 'active' : ''}" data-filter="expenses">Expenses</button>
+      <button class="pill ${state.filter === 'topups' ? 'active' : ''}" data-filter="topups">Top-ups</button>
+    </div>
+  `;
+
+  if (txns.length === 0) {
+    return filtersHTML + `
+      <div class="glass empty-state">
+        <div class="empty-state-icon">📝</div>
+        <p class="text-sm font-semibold" style="margin-bottom: 4px;">No transactions yet</p>
+        <p class="text-xs text-muted">Tap the button below to log your first expense.</p>
+      </div>
+    `;
+  }
+
+  // Group by date
+  const groups = {};
+  txns.forEach(t => {
+    const d = t.date;
+    if (!groups[d]) groups[d] = [];
+    groups[d].push(t);
+  });
+
+  let listHTML = '';
+  for (const [date, items] of Object.entries(groups)) {
+    listHTML += `<div class="date-group-header">${formatDateLong(date)}</div>`;
+    items.forEach(t => {
+      const isExpense = t.type === 'expense';
+      const personColor = t.person === state.meta.partnerA ? 'var(--partner-a)' : t.person === state.meta.partnerB ? 'var(--partner-b)' : 'var(--purple)';
+      const initial = t.person === 'Both' ? '👥' : (t.person ? t.person[0].toUpperCase() : '?');
+      const badgeHTML = t.person === 'Both'
+        ? `<span class="badge badge-sm" style="background: var(--purple); font-size: 0.7rem;">👥</span>`
+        : `<span class="badge badge-sm" style="background: ${personColor};">${initial}</span>`;
+
+      const primaryCat = isExpense && t.items && t.items.length > 0 ? (CAT_MAP[t.items[0].category] || CAT_MAP['other']) : null;
+      const catIconHTML = primaryCat
+        ? `<span class="cat-icon" style="background: ${primaryCat.color}22; font-size: 0.85rem;">${primaryCat.emoji}</span>`
+        : `<span class="cat-icon" style="background: var(--topup-dim); font-size: 0.85rem;">${isExpense ? '📦' : '💰'}</span>`;
+
+      const expanded = state.expandedTxnId === t.id;
+      const confirming = state.confirmDeleteId === t.id;
+
+      let expandedHTML = '';
+      if (expanded) {
+        if (isExpense && t.items && t.items.length > 0) {
+          expandedHTML += `<div style="margin-top: 12px;">`;
+          t.items.forEach(item => {
+            const cat = CAT_MAP[item.category] || CAT_MAP['other'];
+            expandedHTML += `
+              <div class="txn-item-row">
+                <span style="font-size: 0.9rem;">${cat.emoji}</span>
+                <span class="flex-1 truncate">${escHtml(item.product || cat.name)}</span>
+                <span class="text-xs text-muted text-mono">${item.quantity} × ${formatAmt(item.pricePerUnit, state.meta.currency)}</span>
+                <span class="text-sm text-mono font-semibold" style="color: var(--text-primary);">${formatAmt(item.total, state.meta.currency)}</span>
+              </div>
+            `;
+          });
+          expandedHTML += `</div>`;
+        }
+
+        if (confirming) {
+          expandedHTML += `
+            <div class="confirm-bar">
+              <span class="text-xs font-semibold" style="color: var(--expense); flex: 1;">Delete this transaction?</span>
+              <button class="btn text-xs" style="padding: 5px 14px; background: var(--expense); color: #fff; border-radius: var(--radius-full);" data-confirm-delete="${t.id}">Yes, delete</button>
+              <button class="btn text-xs btn-ghost" style="padding: 5px 14px; border-radius: var(--radius-full);" data-cancel-delete>Cancel</button>
+            </div>
+          `;
+        } else {
+          expandedHTML += `
+            <div class="txn-actions">
+              <button class="btn btn-ghost text-xs" style="padding: 7px 16px; border-radius: var(--radius-full);" data-edit-txn="${t.id}">${ICONS.edit} Edit</button>
+              <button class="btn btn-danger text-xs" style="padding: 7px 16px; border-radius: var(--radius-full);" data-delete-txn="${t.id}">${ICONS.trash} Delete</button>
+              ${isExpense ? '' : `<button class="btn btn-ghost text-xs" style="padding: 7px 16px; border-radius: var(--radius-full); margin-left: auto;" data-topup-edit="${t.id}">${ICONS.edit} Edit Top-up</button>`}
+            </div>
+          `;
+        }
+      }
+
+      listHTML += `
+        <div class="txn-row" data-txn-toggle="${t.id}">
+          <div class="flex items-center gap-3">
+            ${catIconHTML}
+            <div class="flex-1" style="min-width: 0;">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-sm font-semibold truncate">${escHtml(t.name || (isExpense ? 'Expense' : 'Top-up'))}</span>
+                <span class="text-sm text-mono font-bold shrink-0" style="color: ${isExpense ? 'var(--expense)' : 'var(--topup)'};">
+                  ${isExpense ? '−' : '+'}${formatAmt(t.total, state.meta.currency)}
+                </span>
+              </div>
+              <div class="flex items-center gap-2" style="margin-top: 4px;">
+                ${badgeHTML}
+                <span class="text-xs text-muted">${escHtml(t.person || '')}</span>
+                ${isExpense && t.items ? `<span class="text-xs text-muted">· ${t.items.length} item${t.items.length > 1 ? 's' : ''}</span>` : ''}
+              </div>
+            </div>
+          </div>
+          ${expandedHTML}
+        </div>
+      `;
+    });
+  }
+
+  return filtersHTML + `<div class="glass" style="padding: 4px 16px;">${listHTML}</div>`;
+}
+
+function attachDashboardEvents() {
+  // Filters
+  document.querySelectorAll('[data-filter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.filter = btn.dataset.filter;
+      render();
+    });
+  });
+
+  // Toggle expand
+  document.querySelectorAll('[data-txn-toggle]').forEach(row => {
+    row.addEventListener('click', (e) => {
+      if (e.target.closest('[data-edit-txn]') || e.target.closest('[data-delete-txn]') || e.target.closest('[data-confirm-delete]') || e.target.closest('[data-cancel-delete]') || e.target.closest('[data-topup-edit]')) return;
+      const id = row.dataset.txnToggle;
+      state.expandedTxnId = state.expandedTxnId === id ? null : id;
+      state.confirmDeleteId = null;
+      render();
+    });
+  });
+
+  // Edit
+  document.querySelectorAll('[data-edit-txn]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const txn = state.transactions.find(t => t.id === btn.dataset.editTxn);
+      if (!txn) return;
+      if (txn.type === 'topup') {
+        state.editingTxn = txn;
+        state.modal = 'add-topup';
+      } else {
+        state.editingTxn = txn;
+        expenseForm = {
+          name: txn.name || '',
+          person: txn.person || state.meta.partnerA,
+          date: txn.date || todayStr(),
+          items: txn.items && txn.items.length > 0
+            ? txn.items.map(i => ({ ...i }))
+            : [{ product: '', category: 'food', quantity: 1, pricePerUnit: '', total: 0 }],
+        };
+        state.modal = 'add-expense';
+      }
+      renderModal();
+    });
+  });
+
+  document.querySelectorAll('[data-topup-edit]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const txn = state.transactions.find(t => t.id === btn.dataset.topupEdit);
+      if (!txn) return;
+      state.editingTxn = txn;
+      state.modal = 'add-topup';
+      renderModal();
+    });
+  });
+
+  // Delete request
+  document.querySelectorAll('[data-delete-txn]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.confirmDeleteId = btn.dataset.deleteTxn;
+      render();
+    });
+  });
+  document.querySelectorAll('[data-confirm-delete]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await removeTransaction(btn.dataset.confirmDelete);
+      state.confirmDeleteId = null;
+      state.expandedTxnId = null;
+      render();
+    });
+  });
+  document.querySelectorAll('[data-cancel-delete]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.confirmDeleteId = null;
+      render();
+    });
+  });
+}
+
+/* ── Summary HTML ── */
+function renderSummaryHTML() {
+  const txns = getSummaryTxns();
+  const allExpenses = getExpenses();
+  const catData = getCategoryBreakdown(txns);
+  const itemData = getItemBreakdown(txns);
+  const monthlyData = getMonthlySpending(allExpenses);
+  const totalSpentInPeriod = txns.reduce((s, t) => s + (Number(t.total) || 0), 0);
+  const txnCount = txns.length;
+  const periodDays = daysInSelectedPeriod(txns);
+  const dailyAverage = totalSpentInPeriod / periodDays;
+  const weeklyAverage = dailyAverage * 7;
+  const largestTransaction = txnCount ? Math.max(...txns.map(t => Number(t.total) || 0)) : 0;
+  const topCategory = catData[0] || null;
+  const topItemBySpend = [...itemData].sort((a, b) => b.spent - a.spent)[0] || null;
+  const topItemByQuantity = [...itemData].sort((a, b) => b.quantity - a.quantity || b.purchases - a.purchases)[0] || null;
+
+  const periodLabels = { month: 'This Month', last: 'Last Month', all: 'All Time' };
+
+  let html = `
+    <!-- Period Selector -->
+    <div class="filter-scroll">
+      <button class="pill ${state.summaryPeriod === 'month' ? 'active' : ''}" data-period="month">This Month</button>
+      <button class="pill ${state.summaryPeriod === 'last' ? 'active' : ''}" data-period="last">Last Month</button>
+      <button class="pill ${state.summaryPeriod === 'all' ? 'active' : ''}" data-period="all">All Time</button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="summary-stat-grid">
+      <div class="stat-card">
+        <div class="text-xs text-muted uppercase font-semibold" style="letter-spacing: 0.06em; margin-bottom: 4px;">Total Spent</div>
+        <div class="heading-md text-mono" style="color: var(--expense);">${formatAmt(totalSpentInPeriod, state.meta.currency)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="text-xs text-muted uppercase font-semibold" style="letter-spacing: 0.06em; margin-bottom: 4px;">Transactions</div>
+        <div class="heading-md text-mono">${txnCount}</div>
+      </div>
+      <div class="stat-card">
+        <div class="text-xs text-muted uppercase font-semibold" style="letter-spacing: 0.06em; margin-bottom: 4px;">Avg / Txn</div>
+        <div class="heading-md text-mono">${txnCount > 0 ? formatAmt(totalSpentInPeriod / txnCount, state.meta.currency) : '—'}</div>
+      </div>
+    </div>
+  `;
+
+  if (totalSpentInPeriod === 0) {
+    html += `
+      <div class="glass empty-state" style="margin-bottom: 20px;">
+        <div class="empty-state-icon">📊</div>
+        <p class="text-sm font-semibold" style="margin-bottom: 4px;">Your insights will appear here</p>
+        <p class="text-xs text-muted">Add an expense with at least one item to see category, product, and spending trends.</p>
+      </div>
+    `;
+  }
+
+  if (totalSpentInPeriod > 0) {
+    html += `
+      <div class="glass" style="padding: 20px; margin-bottom: 20px;">
+        <div class="heading-md" style="margin-bottom: 4px;">Shopping highlights</div>
+        <div class="text-xs text-muted" style="margin-bottom: 14px;">The clearest signals from your ${periodLabels[state.summaryPeriod].toLowerCase()} purchases.</div>
+        <div class="insight-grid" style="margin-bottom: 0;">
+          <div class="insight-tile">
+            <div class="text-xs text-muted uppercase font-semibold" style="letter-spacing: .05em;">Most spent on</div>
+            <div class="insight-value" title="${escHtml(topItemBySpend?.name || '—')}">${escHtml(topItemBySpend?.name || '—')}</div>
+            <div class="insight-detail">${topItemBySpend ? formatAmt(topItemBySpend.spent, state.meta.currency) : '—'}</div>
+          </div>
+          <div class="insight-tile">
+            <div class="text-xs text-muted uppercase font-semibold" style="letter-spacing: .05em;">Bought most</div>
+            <div class="insight-value" title="${escHtml(topItemByQuantity?.name || '—')}">${escHtml(topItemByQuantity?.name || '—')}</div>
+            <div class="insight-detail">${topItemByQuantity ? `${formatQuantity(topItemByQuantity.quantity)} units` : '—'}</div>
+          </div>
+          <div class="insight-tile">
+            <div class="text-xs text-muted uppercase font-semibold" style="letter-spacing: .05em;">Top category</div>
+            <div class="insight-value">${topCategory ? `${topCategory.emoji} ${topCategory.name}` : '—'}</div>
+            <div class="insight-detail">${topCategory ? formatAmt(topCategory.value, state.meta.currency) : '—'}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Donut Chart + Legend
+  if (catData.length > 0) {
+    html += `
+      <div class="glass" style="padding: 20px; margin-bottom: 20px;">
+        <div class="heading-md" style="margin-bottom: 4px;">Spending by Category</div>
+        <div class="text-xs text-muted" style="margin-bottom: 12px;">${periodLabels[state.summaryPeriod]}</div>
+        <div class="chart-donut-container" id="donut-chart"></div>
+        <div id="donut-legend"></div>
+      </div>
+    `;
+  }
+
+  if (itemData.length > 0) {
+    html += `
+      <div class="glass" style="padding: 20px; margin-bottom: 20px;">
+        <div class="heading-md" style="margin-bottom: 4px;">Products by cost</div>
+        <div class="text-xs text-muted" style="margin-bottom: 16px;">The five products that used the most money in this period.</div>
+        <div id="item-spend-chart"></div>
+      </div>
+      <div class="glass" style="padding: 20px; margin-bottom: 20px;">
+        <div class="heading-md" style="margin-bottom: 4px;">Products bought most</div>
+        <div class="text-xs text-muted" style="margin-bottom: 16px;">Ranked by total quantity, including repeat purchases.</div>
+        <div id="item-quantity-chart"></div>
+      </div>
+    `;
+  }
+
+  // Partner Comparison
+  const sA = txns.filter(t => t.person === state.meta.partnerA).reduce((s, t) => s + (Number(t.total) || 0), 0);
+  const sB = txns.filter(t => t.person === state.meta.partnerB).reduce((s, t) => s + (Number(t.total) || 0), 0);
+  const sBoth = txns.filter(t => t.person === 'Both').reduce((s, t) => s + (Number(t.total) || 0), 0);
+  const maxPartner = Math.max(sA, sB, sBoth, 1);
+
+  if (totalSpentInPeriod > 0) {
+    html += `
+      <div class="glass" style="padding: 20px; margin-bottom: 20px;">
+        <div class="heading-md" style="margin-bottom: 4px;">Paid by</div>
+        <div class="text-xs text-muted" style="margin-bottom: 16px;">Shared purchases are shown separately from individual payments.</div>
+        <div style="margin-bottom: 14px;">
+          <div class="flex items-center justify-between text-sm" style="margin-bottom: 6px;">
+            <span class="flex items-center gap-2">
+              <span class="badge badge-sm" style="background: var(--partner-a);">${state.meta.partnerA[0]}</span>
+              ${escHtml(state.meta.partnerA)}
+            </span>
+            <span class="text-mono font-semibold">${formatAmt(sA, state.meta.currency)}</span>
+          </div>
+          <div class="progress-track" style="height: 10px; border-radius: 5px;">
+            <div class="progress-bar" style="width: ${(sA / maxPartner * 100)}%; background: var(--partner-a); border-radius: 5px;"></div>
+          </div>
+        </div>
+        <div style="margin-bottom: ${sBoth > 0 ? '14px' : '0'};">
+          <div class="flex items-center justify-between text-sm" style="margin-bottom: 6px;">
+            <span class="flex items-center gap-2">
+              <span class="badge badge-sm" style="background: var(--partner-b);">${state.meta.partnerB[0]}</span>
+              ${escHtml(state.meta.partnerB)}
+            </span>
+            <span class="text-mono font-semibold">${formatAmt(sB, state.meta.currency)}</span>
+          </div>
+          <div class="progress-track" style="height: 10px; border-radius: 5px;">
+            <div class="progress-bar" style="width: ${(sB / maxPartner * 100)}%; background: var(--partner-b); border-radius: 5px;"></div>
+          </div>
+        </div>
+        ${sBoth > 0 ? `
+          <div>
+            <div class="flex items-center justify-between text-sm" style="margin-bottom: 6px;">
+              <span class="flex items-center gap-2">
+                <span class="badge badge-sm" style="background: var(--purple);">👥</span>
+                Both
+              </span>
+              <span class="text-mono font-semibold">${formatAmt(sBoth, state.meta.currency)}</span>
+            </div>
+            <div class="progress-track" style="height: 10px; border-radius: 5px;">
+              <div class="progress-bar" style="width: ${(sBoth / maxPartner * 100)}%; background: var(--purple); border-radius: 5px;"></div>
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  if (totalSpentInPeriod > 0) {
+    html += `
+      <div class="glass" style="padding: 20px; margin-bottom: 20px;">
+          <div class="heading-md" style="margin-bottom: 4px;">Spending rhythm</div>
+        <div class="text-xs text-muted" style="margin-bottom: 14px;">A quick read on your ${periodLabels[state.summaryPeriod].toLowerCase()} spending.</div>
+        <div class="insight-grid" style="margin-bottom: 0;">
+          <div class="stat-card"><div class="text-xs text-muted uppercase font-semibold" style="letter-spacing: .05em; margin-bottom: 4px;">Avg / Day</div><div class="text-sm text-mono font-semibold">${formatAmt(dailyAverage, state.meta.currency)}</div></div>
+          <div class="stat-card"><div class="text-xs text-muted uppercase font-semibold" style="letter-spacing: .05em; margin-bottom: 4px;">Avg / Week</div><div class="text-sm text-mono font-semibold">${formatAmt(weeklyAverage, state.meta.currency)}</div></div>
+          <div class="stat-card"><div class="text-xs text-muted uppercase font-semibold" style="letter-spacing: .05em; margin-bottom: 4px;">Largest Buy</div><div class="text-sm text-mono font-semibold">${formatAmt(largestTransaction, state.meta.currency)}</div></div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Monthly Trend
+  if (monthlyData.length > 0) {
+    html += `
+      <div class="glass" style="padding: 20px; margin-bottom: 20px;">
+        <div class="heading-md" style="margin-bottom: 16px;">Monthly Trend</div>
+        <div id="monthly-chart"></div>
+      </div>
+    `;
+  }
+
+  // Export Button
+  html += `
+    <button class="btn btn-ghost w-full" id="btn-export" style="margin-bottom: 16px;">
+      ${ICONS.download} Export as CSV
+    </button>
+  `;
+
+  // Defer chart rendering
+  setTimeout(() => {
+    renderDonutChart(catData, totalSpentInPeriod);
+    renderMonthlyChart(monthlyData);
+    renderItemChart('item-spend-chart', itemData, 'spent');
+    renderItemChart('item-quantity-chart', itemData, 'quantity');
+    attachSummaryEvents();
+  }, 50);
+
+  return html;
+}
+
+function attachSummaryEvents() {
+  document.querySelectorAll('[data-period]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.summaryPeriod = btn.dataset.period;
+      render();
+    });
+  });
+
+  const exportBtn = document.getElementById('btn-export');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', exportCSV);
+  }
+}
+
+/* ══════════════════════════════════════
+   CHARTS
+   ══════════════════════════════════════ */
+function renderDonutChart(data, total) {
+  const container = document.getElementById('donut-chart');
+  const legend = document.getElementById('donut-legend');
+  if (!container || !data.length) return;
+
+  const size = 180;
+  const cx = size / 2, cy = size / 2;
+  const outerR = 78, innerR = 52;
+  const gap = 0.02; // radians gap between segments
+
+  let paths = '';
+  let cumAngle = -Math.PI / 2;
+
+  data.forEach((d, i) => {
+    const pct = d.value / total;
+    const angle = pct * Math.PI * 2 - gap;
+    if (angle <= 0) return;
+
+    const x1o = cx + outerR * Math.cos(cumAngle);
+    const y1o = cy + outerR * Math.sin(cumAngle);
+    const x2o = cx + outerR * Math.cos(cumAngle + angle);
+    const y2o = cy + outerR * Math.sin(cumAngle + angle);
+    const x1i = cx + innerR * Math.cos(cumAngle + angle);
+    const y1i = cy + innerR * Math.sin(cumAngle + angle);
+    const x2i = cx + innerR * Math.cos(cumAngle);
+    const y2i = cy + innerR * Math.sin(cumAngle);
+    const largeArc = angle > Math.PI ? 1 : 0;
+
+    paths += `<path d="M${x1o},${y1o} A${outerR},${outerR} 0 ${largeArc},1 ${x2o},${y2o} L${x1i},${y1i} A${innerR},${innerR} 0 ${largeArc},0 ${x2i},${y2i} Z" fill="${d.color}" opacity="0.85" style="transition: opacity 0.2s;">
+      <animate attributeName="opacity" from="0" to="0.85" dur="0.6s" begin="${i * 0.08}s" fill="freeze"/>
+    </path>`;
+
+    cumAngle += pct * Math.PI * 2;
+  });
+
+  container.innerHTML = `
+    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+      ${paths}
+      <text x="${cx}" y="${cy - 6}" text-anchor="middle" fill="var(--text-primary)" font-family="var(--font-mono)" font-size="16" font-weight="700">
+        ${formatAmt(total, state.meta.currency)}
+      </text>
+      <text x="${cx}" y="${cy + 12}" text-anchor="middle" fill="var(--text-muted)" font-family="var(--font-body)" font-size="10">
+        total spent
+      </text>
+    </svg>
+  `;
+
+  if (legend) {
+    legend.innerHTML = data.map(d => {
+      const pct = ((d.value / total) * 100).toFixed(1);
+      return `
+        <div class="cat-legend-row">
+          <span class="cat-legend-dot" style="background: ${d.color};"></span>
+          <span style="font-size: 0.85rem;">${d.emoji}</span>
+          <span class="text-sm flex-1">${d.name}</span>
+          <span class="text-xs text-mono text-muted">${pct}%</span>
+          <span class="text-sm text-mono font-semibold">${formatAmt(d.value, state.meta.currency)}</span>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+function renderMonthlyChart(data) {
+  const container = document.getElementById('monthly-chart');
+  if (!container || !data.length) return;
+  const maxVal = Math.max(...data.map(d => d.value), 1);
+
+  container.innerHTML = data.map((d, i) => `
+    <div class="chart-bar-row" style="animation: fadeInUp 0.4s ease ${i * 0.06}s both;">
+      <span class="chart-bar-label">${d.label}</span>
+      <div class="chart-bar-track">
+        <div class="chart-bar-fill" style="width: ${(d.value / maxVal * 100)}%; background: linear-gradient(90deg, var(--accent), var(--purple));"></div>
+      </div>
+      <span class="chart-bar-value">${formatAmt(d.value, state.meta.currency)}</span>
+    </div>
+  `).join('');
+}
+
+function renderItemChart(containerId, data, metric) {
+  const container = document.getElementById(containerId);
+  if (!container || !data.length) return;
+  const ranked = [...data]
+    .sort((a, b) => b[metric] - a[metric] || b.purchases - a.purchases)
+    .slice(0, 5);
+  const maxValue = Math.max(...ranked.map(item => Number(item[metric]) || 0), 1);
+  const isSpend = metric === 'spent';
+  const color = isSpend ? 'var(--purple)' : 'var(--accent)';
+
+  container.innerHTML = ranked.map((item, index) => {
+    const value = Number(item[metric]) || 0;
+    const display = isSpend
+      ? formatAmt(value, state.meta.currency)
+      : `${formatQuantity(value)} unit${value === 1 ? '' : 's'}`;
+    return `
+      <div class="item-chart-row" style="animation: fadeInUp 0.35s ease ${index * 0.06}s both;">
+        <span class="item-chart-label" title="${escHtml(item.name)}">${escHtml(item.name)}</span>
+        <div class="item-chart-track"><div class="item-chart-fill" style="width: ${(value / maxValue) * 100}%; background: linear-gradient(90deg, ${color}, ${isSpend ? 'var(--partner-b)' : 'var(--purple)'});"></div></div>
+        <span class="item-chart-value">${display}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ══════════════════════════════════════
+   MODALS
+   ══════════════════════════════════════ */
+function renderModal() {
+  const root = document.getElementById('modal-root');
+  if (!root) return;
+
+  if (!state.modal) { root.innerHTML = ''; return; }
+
+  let content = '';
+  if (state.modal === 'add-expense') content = renderAddExpenseModal();
+  else if (state.modal === 'add-topup') content = renderAddTopupModal();
+  else if (state.modal === 'settings') content = renderSettingsModal();
+
+  root.innerHTML = `
+    <div class="modal-overlay" id="modal-overlay">
+      <div class="modal-content">
+        ${content}
+      </div>
+    </div>
+  `;
+
+  // Close on overlay click
+  document.getElementById('modal-overlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
+  // Attach modal-specific events
+  if (state.modal === 'add-expense') attachExpenseFormEvents();
+  else if (state.modal === 'add-topup') attachTopupFormEvents();
+  else if (state.modal === 'settings') attachSettingsEvents();
+}
+
+function closeModal() {
+  state.modal = null;
+  state.editingTxn = null;
+  const root = document.getElementById('modal-root');
+  if (root) root.innerHTML = '';
+}
+
+/* ── Add Expense Modal ── */
+function renderAddExpenseModal() {
+  const isEdit = !!state.editingTxn;
+  const grandTotal = expenseForm.items.reduce((s, item) => s + (Number(item.total) || 0), 0);
+
+  const categoryOptions = CATEGORIES.map(c =>
+    `<option value="${c.id}">${c.emoji} ${c.name}</option>`
+  ).join('');
+
+  const itemsHTML = expenseForm.items.map((item, idx) => {
+    const cat = CAT_MAP[item.category] || CAT_MAP['other'];
+    const total = (Number(item.quantity) || 0) * (Number(item.pricePerUnit) || 0);
+    return `
+      <div class="item-form-row" data-item-idx="${idx}">
+        ${expenseForm.items.length > 1 ? `<button type="button" class="remove-item" data-remove-item="${idx}">×</button>` : ''}
+        <label class="label">Product</label>
+        <input class="input-field item-product" value="${escHtml(item.product)}" placeholder="e.g. Rice 5kg" data-idx="${idx}">
+
+        <div class="item-form-grid">
+          <div>
+            <label class="label" style="margin-top: 8px;">Category</label>
+            <select class="input-field item-category" data-idx="${idx}">
+              ${CATEGORIES.map(c => `<option value="${c.id}" ${item.category === c.id ? 'selected' : ''}>${c.emoji} ${c.name}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="label" style="margin-top: 8px;">Quantity</label>
+            <input class="input-field input-field-mono item-qty" type="number" min="0.01" step="0.01" value="${item.quantity || 1}" data-idx="${idx}" inputmode="decimal">
+          </div>
+          <div>
+            <label class="label" style="margin-top: 8px;">Price / Unit</label>
+            <input class="input-field input-field-mono item-price" type="number" min="0" step="0.01" value="${item.pricePerUnit || ''}" placeholder="0.00" data-idx="${idx}" inputmode="decimal">
+          </div>
+          <div>
+            <label class="label" style="margin-top: 8px;">Total</label>
+            <div class="input-field input-field-mono item-total" data-item-total="${idx}" style="background: var(--accent-dim); border-color: var(--accent); color: var(--accent); display: flex; align-items: center;">
+              ${state.meta.currency}${total.toFixed(2)}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="flex items-center justify-between" style="margin-bottom: 20px;">
+      <h2 class="heading-lg">${isEdit ? '✏️ Edit Expense' : '🛒 Add Expense'}</h2>
+      <button type="button" class="btn-icon" id="modal-close" aria-label="Close expense form">${ICONS.x}</button>
+    </div>
+
+    <form id="expense-form">
+      <label class="label">Transaction Name</label>
+      <input id="exp-name" class="input-field" value="${escHtml(expenseForm.name)}" placeholder="e.g. Big Bazaar Shopping, Swiggy Order" style="margin-bottom: 14px;">
+
+      <label class="label">Paid By</label>
+      <div class="flex gap-2" style="margin-bottom: 14px;">
+        <button type="button" class="pill person-pill ${expenseForm.person === state.meta.partnerA ? 'active' : ''}" data-person="${escHtml(state.meta.partnerA)}" style="${expenseForm.person === state.meta.partnerA ? 'background: var(--partner-a-dim); border-color: var(--partner-a); color: var(--partner-a);' : ''}">${escHtml(state.meta.partnerA)}</button>
+        <button type="button" class="pill person-pill ${expenseForm.person === state.meta.partnerB ? 'active' : ''}" data-person="${escHtml(state.meta.partnerB)}" style="${expenseForm.person === state.meta.partnerB ? 'background: var(--partner-b-dim); border-color: var(--partner-b); color: var(--partner-b);' : ''}">${escHtml(state.meta.partnerB)}</button>
+        <button type="button" class="pill person-pill ${expenseForm.person === 'Both' ? 'active' : ''}" data-person="Both" style="${expenseForm.person === 'Both' ? 'background: var(--purple-dim); border-color: var(--purple); color: var(--purple);' : ''}">Both</button>
+      </div>
+
+      <label class="label">Date</label>
+      <input id="exp-date" class="input-field input-field-mono" type="date" value="${expenseForm.date}" style="margin-bottom: 18px;">
+
+      <div class="flex items-center justify-between" style="margin-bottom: 10px;">
+        <label class="label" style="margin-bottom: 0;">Items</label>
+        <button type="button" class="pill" id="add-item-btn" style="font-size: 0.75rem; padding: 4px 12px;">${ICONS.plus} Add Item</button>
+      </div>
+
+      ${itemsHTML}
+
+      <!-- Grand Total -->
+      <div class="flex items-center justify-between" style="padding: 14px 0; border-top: 2px solid var(--border-light); margin-top: 8px;">
+        <span class="text-sm font-bold uppercase" style="letter-spacing: 0.06em;">Grand Total</span>
+        <span id="grand-total" class="heading-md text-mono" style="color: var(--accent);">${state.meta.currency}${grandTotal.toFixed(2)}</span>
+      </div>
+
+      <div id="exp-error" class="text-xs" style="color: var(--expense); margin-bottom: 10px; display: none;"></div>
+
+      <div class="flex gap-2" style="margin-top: 8px;">
+        <button type="button" class="btn btn-ghost flex-1" id="exp-cancel">Cancel</button>
+        <button type="submit" class="btn btn-primary flex-1">${isEdit ? 'Save Changes' : 'Add Expense'}</button>
+      </div>
+    </form>
+  `;
+}
+
+function attachExpenseFormEvents() {
+  document.getElementById('modal-close')?.addEventListener('click', closeModal);
+  document.getElementById('exp-cancel')?.addEventListener('click', closeModal);
+
+  // Person pills
+  document.querySelectorAll('.person-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      expenseForm.person = btn.dataset.person;
+      renderModal();
+    });
+  });
+
+  // Add item
+  document.getElementById('add-item-btn')?.addEventListener('click', () => {
+    syncFormToState();
+    expenseForm.items.push({ product: '', category: 'food', quantity: 1, pricePerUnit: '', total: 0 });
+    renderModal();
+    // Focus the new product input
+    setTimeout(() => {
+      const inputs = document.querySelectorAll('.item-product');
+      if (inputs.length) inputs[inputs.length - 1].focus();
+    }, 100);
+  });
+
+  // Remove item
+  document.querySelectorAll('[data-remove-item]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      syncFormToState();
+      const idx = Number(btn.dataset.removeItem);
+      expenseForm.items.splice(idx, 1);
+      renderModal();
+    });
+  });
+
+  // Live recalculation without redrawing the form (keeps the cursor in the field).
+  document.querySelectorAll('.item-qty, .item-price').forEach(input => {
+    input.addEventListener('input', () => {
+      syncFormToState();
+      updateExpenseTotals();
+    });
+  });
+
+  // Category change
+  document.querySelectorAll('.item-category').forEach(sel => {
+    sel.addEventListener('change', () => {
+      syncFormToState();
+    });
+  });
+
+  // Form submit
+  document.getElementById('expense-form')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    syncFormToState();
+
+    const name = document.getElementById('exp-name')?.value.trim();
+    const date = document.getElementById('exp-date')?.value || todayStr();
+
+    // Validate
+    const grandTotal = expenseForm.items.reduce((s, item) => s + (Number(item.total) || 0), 0);
+    if (grandTotal <= 0) {
+      showExpenseError('Add at least one item with a price.');
+      return;
+    }
+    if (!expenseForm.person) {
+      showExpenseError('Select who paid for this.');
+      return;
+    }
+
+    const txn = {
+      id: state.editingTxn ? state.editingTxn.id : genId(),
+      type: 'expense',
+      name: name || 'Expense',
+      person: expenseForm.person,
+      date: date,
+      items: expenseForm.items.map(i => ({
+        product: i.product || (CAT_MAP[i.category]?.name || 'Item'),
+        category: i.category,
+        quantity: Number(i.quantity) || 1,
+        pricePerUnit: Number(i.pricePerUnit) || 0,
+        total: (Number(i.quantity) || 1) * (Number(i.pricePerUnit) || 0),
+      })),
+      total: grandTotal,
+      createdAt: state.editingTxn ? state.editingTxn.createdAt : Date.now(),
+    };
+
+    if (state.editingTxn) {
+      const idx = state.transactions.findIndex(t => t.id === txn.id);
+      if (idx >= 0) state.transactions[idx] = txn;
+    } else {
+      state.transactions.push(txn);
+    }
+
+    persistTransaction(txn);
+    closeModal();
+    render();
+  });
+}
+
+function syncFormToState() {
+  const nameInput = document.getElementById('exp-name');
+  const dateInput = document.getElementById('exp-date');
+  if (nameInput) expenseForm.name = nameInput.value;
+  if (dateInput) expenseForm.date = dateInput.value;
+
+  document.querySelectorAll('.item-form-row').forEach((row) => {
+    const idx = Number(row.dataset.itemIdx);
+    if (idx >= expenseForm.items.length) return;
+    const product = row.querySelector('.item-product')?.value || '';
+    const category = row.querySelector('.item-category')?.value || 'other';
+    const qty = Number(row.querySelector('.item-qty')?.value) || 1;
+    const price = Number(row.querySelector('.item-price')?.value) || 0;
+    expenseForm.items[idx] = { product, category, quantity: qty, pricePerUnit: price, total: qty * price };
+  });
+}
+
+function updateExpenseTotals() {
+  const grandTotal = expenseForm.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
+  document.querySelectorAll('[data-item-total]').forEach(el => {
+    const item = expenseForm.items[Number(el.dataset.itemTotal)];
+    if (item) el.textContent = `${state.meta.currency}${(Number(item.total) || 0).toFixed(2)}`;
+  });
+  const grand = document.getElementById('grand-total');
+  if (grand) grand.textContent = `${state.meta.currency}${grandTotal.toFixed(2)}`;
+}
+
+function showExpenseError(msg) {
+  const el = document.getElementById('exp-error');
+  if (el) { el.textContent = msg; el.style.display = 'block'; }
+}
+
+/* ── Add Top-up Modal ── */
+function renderAddTopupModal() {
+  const isEdit = !!state.editingTxn;
+  const txn = state.editingTxn;
+  return `
+    <div class="flex items-center justify-between" style="margin-bottom: 20px;">
+      <h2 class="heading-lg">${isEdit ? '✏️ Edit Top-up' : '💰 Add Top-up'}</h2>
+      <button type="button" class="btn-icon" id="modal-close" aria-label="Close top-up form">${ICONS.x}</button>
+    </div>
+
+    <form id="topup-form">
+      <label class="label">Amount</label>
+      <div class="flex items-center gap-0" style="margin-bottom: 14px;">
+        <span class="text-sm text-mono text-muted" style="padding: 0 12px;">${state.meta.currency}</span>
+        <input id="tu-amount" class="input-field input-field-mono" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" value="${isEdit ? txn.total : ''}" autofocus style="flex: 1;">
+      </div>
+
+      <label class="label">Note</label>
+      <input id="tu-note" class="input-field" placeholder="e.g. Monthly savings" value="${isEdit ? escHtml(txn.name || '') : ''}" style="margin-bottom: 14px;">
+
+      <label class="label">Added By</label>
+      <div class="flex gap-2" style="margin-bottom: 14px;">
+        <button type="button" class="pill tu-person ${(isEdit ? txn.person : state.meta.partnerA) === state.meta.partnerA ? 'active' : ''}" data-person="${escHtml(state.meta.partnerA)}" style="${(isEdit ? txn.person : state.meta.partnerA) === state.meta.partnerA ? 'background: var(--partner-a-dim); border-color: var(--partner-a); color: var(--partner-a);' : ''}">${escHtml(state.meta.partnerA)}</button>
+        <button type="button" class="pill tu-person ${(isEdit ? txn.person : '') === state.meta.partnerB ? 'active' : ''}" data-person="${escHtml(state.meta.partnerB)}" style="${(isEdit ? txn.person : '') === state.meta.partnerB ? 'background: var(--partner-b-dim); border-color: var(--partner-b); color: var(--partner-b);' : ''}">${escHtml(state.meta.partnerB)}</button>
+        <button type="button" class="pill tu-person ${(isEdit ? txn.person : '') === 'Both' ? 'active' : ''}" data-person="Both" style="${(isEdit ? txn.person : '') === 'Both' ? 'background: var(--purple-dim); border-color: var(--purple); color: var(--purple);' : ''}">Both</button>
+      </div>
+
+      <label class="label">Date</label>
+      <input id="tu-date" class="input-field input-field-mono" type="date" value="${isEdit ? txn.date : todayStr()}" style="margin-bottom: 14px;">
+
+      <div id="tu-error" class="text-xs" style="color: var(--expense); margin-bottom: 10px; display: none;"></div>
+
+      <div class="flex gap-2">
+        <button type="button" class="btn btn-ghost flex-1" id="tu-cancel">Cancel</button>
+        <button type="submit" class="btn btn-primary flex-1">${isEdit ? 'Save Changes' : 'Add Top-up'}</button>
+      </div>
+    </form>
+  `;
+}
+
+let topupPerson = '';
+
+function attachTopupFormEvents() {
+  const isEdit = !!state.editingTxn;
+  topupPerson = isEdit ? state.editingTxn.person : state.meta.partnerA;
+
+  document.getElementById('modal-close')?.addEventListener('click', closeModal);
+  document.getElementById('tu-cancel')?.addEventListener('click', closeModal);
+
+  document.querySelectorAll('.tu-person').forEach(btn => {
+    btn.addEventListener('click', () => {
+      topupPerson = btn.dataset.person;
+      // Update pills visually
+      document.querySelectorAll('.tu-person').forEach(p => {
+        p.classList.remove('active');
+        p.style.background = '';
+        p.style.borderColor = '';
+        p.style.color = '';
+      });
+      btn.classList.add('active');
+      const color = topupPerson === state.meta.partnerA ? 'var(--partner-a)' : topupPerson === state.meta.partnerB ? 'var(--partner-b)' : 'var(--purple)';
+      const dim = topupPerson === state.meta.partnerA ? 'var(--partner-a-dim)' : topupPerson === state.meta.partnerB ? 'var(--partner-b-dim)' : 'var(--purple-dim)';
+      btn.style.background = dim;
+      btn.style.borderColor = color;
+      btn.style.color = color;
+    });
+  });
+
+  document.getElementById('topup-form')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const amt = Number(document.getElementById('tu-amount')?.value);
+    const note = document.getElementById('tu-note')?.value.trim() || 'Top-up';
+    const date = document.getElementById('tu-date')?.value || todayStr();
+
+    if (!amt || amt <= 0) {
+      const el = document.getElementById('tu-error');
+      if (el) { el.textContent = 'Enter an amount greater than 0.'; el.style.display = 'block'; }
+      return;
+    }
+
+    const txn = {
+      id: state.editingTxn ? state.editingTxn.id : genId(),
+      type: 'topup',
+      name: note,
+      person: topupPerson,
+      date: date,
+      items: [],
+      total: amt,
+      createdAt: state.editingTxn ? state.editingTxn.createdAt : Date.now(),
+    };
+
+    if (state.editingTxn) {
+      const idx = state.transactions.findIndex(t => t.id === txn.id);
+      if (idx >= 0) state.transactions[idx] = txn;
+    } else {
+      state.transactions.push(txn);
+    }
+
+    persistTransaction(txn);
+    closeModal();
+    render();
+  });
+}
+
+/* ── Settings Modal ── */
+function renderSettingsModal() {
+  return `
+    <div class="flex items-center justify-between" style="margin-bottom: 20px;">
+      <h2 class="heading-lg">⚙️ Settings</h2>
+      <button type="button" class="btn-icon" id="modal-close" aria-label="Close settings">${ICONS.x}</button>
+    </div>
+
+    <form id="settings-form">
+      <label class="label">Partner 1 Name</label>
+      <input id="set-a" class="input-field" value="${escHtml(state.meta.partnerA)}" style="margin-bottom: 12px;">
+
+      <label class="label">Partner 2 Name</label>
+      <input id="set-b" class="input-field" value="${escHtml(state.meta.partnerB)}" style="margin-bottom: 12px;">
+
+       <label class="label">Currency Symbol</label>
+       <input id="set-currency" class="input-field input-field-mono" value="${escHtml(state.meta.currency)}" maxlength="3" style="width: 80px; text-align: center; margin-bottom: 18px;">
+
+       <label class="label">Monthly Spending Budget <span class="text-muted" style="font-weight: 400;">(optional)</span></label>
+       <input id="set-budget" class="input-field input-field-mono" type="number" min="0" step="0.01" inputmode="decimal" value="${Number(state.meta.monthlyBudget) || ''}" placeholder="0.00" style="margin-bottom: 18px;">
+
+      <button type="submit" class="btn btn-primary w-full" style="margin-bottom: 12px;">Save Changes</button>
+    </form>
+
+    <div class="divider"></div>
+
+    <div class="flex gap-3" style="margin-bottom: 16px;">
+      <button class="btn btn-ghost flex-1" id="btn-add-topup-settings">💰 Add Top-up</button>
+      <button class="btn btn-ghost flex-1" id="btn-export-backup">${ICONS.download} Back up data</button>
+    </div>
+
+    <div class="text-xs text-muted" style="margin-bottom: 16px; line-height: 1.5;">
+      ${USE_FIREBASE ? '☁️ Cloud sync is active. Data syncs in real-time between devices.' : '💾 Data is saved locally. To sync across devices, add Firebase config.'}
+    </div>
+
+    <div class="divider"></div>
+
+    <div id="reset-section">
+      <button type="button" class="btn btn-danger w-full" id="btn-reset" style="font-size: 0.8rem;">
+        ${ICONS.trash} Reset All Data
+      </button>
+    </div>
+  `;
+}
+
+function attachSettingsEvents() {
+  document.getElementById('modal-close')?.addEventListener('click', closeModal);
+
+  document.getElementById('settings-form')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const a = document.getElementById('set-a')?.value.trim();
+    const b = document.getElementById('set-b')?.value.trim();
+    const currency = document.getElementById('set-currency')?.value.trim() || '₹';
+    const monthlyBudget = Math.max(Number(document.getElementById('set-budget')?.value) || 0, 0);
+    if (!a || !b) return;
+    state.meta.partnerA = a;
+    state.meta.partnerB = b;
+    state.meta.currency = currency;
+    state.meta.monthlyBudget = monthlyBudget;
+    persistMeta();
+    closeModal();
+    render();
+  });
+
+  document.getElementById('btn-add-topup-settings')?.addEventListener('click', () => {
+    state.editingTxn = null;
+    state.modal = 'add-topup';
+    renderModal();
+  });
+
+  document.getElementById('btn-export-backup')?.addEventListener('click', exportBackup);
+
+  document.getElementById('btn-reset')?.addEventListener('click', () => {
+    const section = document.getElementById('reset-section');
+    if (!section) return;
+    section.innerHTML = `
+      <div class="confirm-bar" style="flex-direction: column; align-items: stretch; gap: 10px;">
+        <span class="text-xs font-semibold" style="color: var(--expense);">⚠️ This will delete ALL data for both of you. Download a backup first if you may need it later.</span>
+        <div class="flex gap-2">
+          <button class="btn btn-ghost flex-1 text-xs" id="reset-cancel" style="padding: 8px;">Cancel</button>
+          <button class="btn flex-1 text-xs" id="reset-confirm" style="padding: 8px; background: var(--expense); color: #fff;">Yes, Reset Everything</button>
+        </div>
+      </div>
+    `;
+    document.getElementById('reset-cancel')?.addEventListener('click', () => renderModal());
+    document.getElementById('reset-confirm')?.addEventListener('click', async () => {
+      localStorage.removeItem(STORAGE_KEY);
+      if (USE_FIREBASE && db && firebaseModules) {
+        const { doc, deleteDoc, collection, getDocs } = firebaseModules;
+        try {
+          await deleteDoc(doc(db, 'config', 'meta'));
+          const snap = await getDocs(collection(db, 'transactions'));
+          snap.forEach(async (d) => await deleteDoc(d.ref));
+        } catch (e) { console.warn(e); }
+      }
+      state.meta = null;
+      state.transactions = [];
+      closeModal();
+      render();
+    });
+  });
+}
+
+/* ══════════════════════════════════════
+   CSV EXPORT
+   ══════════════════════════════════════ */
+function exportCSV() {
+  const rows = [['Date', 'Transaction', 'Person', 'Type', 'Product', 'Category', 'Qty', 'Price/Unit', 'Item Total', 'Transaction Total']];
+  const sorted = [...state.transactions].sort((a, b) => a.date.localeCompare(b.date));
+
+  sorted.forEach(t => {
+    if (t.type === 'expense' && t.items && t.items.length > 0) {
+      t.items.forEach((item, i) => {
+        const cat = CAT_MAP[item.category]?.name || item.category;
+        rows.push([
+          i === 0 ? t.date : '',
+          i === 0 ? (t.name || 'Expense') : '',
+          i === 0 ? t.person : '',
+          i === 0 ? 'Expense' : '',
+          item.product || cat,
+          cat,
+          item.quantity,
+          item.pricePerUnit,
+          item.total,
+          i === 0 ? t.total : '',
+        ]);
+      });
+    } else {
+      rows.push([t.date, t.name || 'Top-up', t.person, t.type === 'topup' ? 'Top-up' : 'Expense', '', '', '', '', '', t.total]);
+    }
+  });
+
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `spendsync-export-${todayStr()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportBackup() {
+  const backup = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    meta: state.meta,
+    transactions: state.transactions,
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `spendsync-backup-${todayStr()}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && state.modal) closeModal();
+});
+
+/* ══════════════════════════════════════
+   INITIALIZATION
+   ══════════════════════════════════════ */
+async function init() {
+  // Load from localStorage first
+  const local = loadLocal();
+  if (local && local.meta) {
+    state.meta = local.meta;
+    state.transactions = local.transactions || [];
+  }
+
+  // Try Firebase
+  if (USE_FIREBASE) {
+    const ok = await initFirebase();
+    if (ok) {
+      // Load remote data
+      try {
+        const { doc, getDoc, collection, getDocs } = firebaseModules;
+        const metaSnap = await getDoc(doc(db, 'config', 'meta'));
+        if (metaSnap.exists()) {
+          state.meta = metaSnap.data();
+          const txnSnap = await getDocs(collection(db, 'transactions'));
+          const remoteTxns = [];
+          txnSnap.forEach(d => remoteTxns.push(d.data()));
+          state.transactions = remoteTxns;
+          saveLocal({ meta: state.meta, transactions: state.transactions });
+        } else if (state.meta) {
+          // Push local data to Firebase
+          persistAll();
+        }
+      } catch (e) { console.warn('Firebase load failed', e); }
+
+      startFirebaseSync();
+    }
+  }
+
+  if (state.meta) resetExpenseForm();
+  render();
+}
+
+init();
+</script>
+</body>
+</html>
