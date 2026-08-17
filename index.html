@@ -833,6 +833,13 @@ select.input-field option {
     </div>
   </div>
 
+  <!-- Pull to Refresh Indicator -->
+  <div id="pull-refresh-indicator" style="position: fixed; top: -60px; left: 0; right: 0; display: flex; justify-content: center; align-items: center; z-index: 1000; transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease; opacity: 0; pointer-events: none;">
+    <div style="background: var(--bg-card); padding: 8px; border-radius: 50%; box-shadow: 0 4px 16px rgba(0,0,0,0.2); border: 1px solid var(--border-light); color: var(--accent);">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="ptr-icon"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+    </div>
+  </div>
+
   <!-- Main App (hidden until authenticated) -->
   <div id="app" style="display: none;">
     <!-- Initial Loading Skeleton -->
@@ -1641,24 +1648,30 @@ function renderDashboardHTML() {
       }
 
       listHTML += `
-        <div class="txn-row" data-txn-toggle="${t.id}">
-          <div class="flex items-center gap-3">
-            ${catIconHTML}
-            <div class="flex-1" style="min-width: 0;">
-              <div class="flex items-center justify-between gap-2">
-                <span class="text-sm font-semibold truncate">${escHtml(t.name || (isExpense ? 'Expense' : 'Top-up'))}</span>
-                <span class="text-sm text-mono font-bold shrink-0" style="color: ${isExpense ? 'var(--expense)' : 'var(--topup)'};">
-                  ${isExpense ? '−' : '+'}${formatAmt(t.total, state.meta.currency)}
-                </span>
-              </div>
-              <div class="flex items-center gap-2" style="margin-top: 4px;">
-                ${badgeHTML}
-                <span class="text-xs text-muted">${escHtml(t.person || '')}</span>
-                ${isExpense && t.items ? `<span class="text-xs text-muted">· ${t.items.length} item${t.items.length > 1 ? 's' : ''}</span>` : ''}
+        <div class="txn-row" data-txn-toggle="${t.id}" style="position: relative; overflow: hidden;">
+          <div class="swipe-actions" style="position: absolute; top: 0; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-between; z-index: 0;">
+             <button class="btn" style="background: var(--blue); color: white; width: 70px; border-radius: 0;" data-edit-txn="${t.id}">${ICONS.edit}</button>
+             <button class="btn btn-danger" style="width: 70px; border-radius: 0;" data-delete-txn="${t.id}">${ICONS.trash}</button>
+          </div>
+          <div class="txn-row-inner" data-swipe-id="${t.id}" style="position: relative; z-index: 1; background: var(--bg-card); transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+            <div class="flex items-center gap-3">
+              ${catIconHTML}
+              <div class="flex-1" style="min-width: 0;">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-sm font-semibold truncate">${escHtml(t.name || (isExpense ? 'Expense' : 'Top-up'))}</span>
+                  <span class="text-sm text-mono font-bold shrink-0" style="color: ${isExpense ? 'var(--expense)' : 'var(--topup)'};">
+                    ${isExpense ? '−' : '+'}${formatAmt(t.total, state.meta.currency)}
+                  </span>
+                </div>
+                <div class="flex items-center gap-2" style="margin-top: 4px;">
+                  ${badgeHTML}
+                  <span class="text-xs text-muted">${escHtml(t.person || '')}</span>
+                  ${isExpense && t.items ? `<span class="text-xs text-muted">· ${t.items.length} item${t.items.length > 1 ? 's' : ''}</span>` : ''}
+                </div>
               </div>
             </div>
+            ${expandedHTML}
           </div>
-          ${expandedHTML}
         </div>
       `;
     });
@@ -1676,10 +1689,74 @@ function attachDashboardEvents() {
     });
   });
 
-  // Toggle expand
+  // Toggle expand & Swipe logic
+  let swipeStartX = 0;
+  let swipeCurrentX = 0;
+  let activeSwipeElement = null;
+  let isSwiping = false;
+
+  document.querySelectorAll('.txn-row-inner').forEach(inner => {
+    inner.addEventListener('touchstart', (e) => {
+      if (e.target.closest('button')) return;
+      swipeStartX = e.touches[0].clientX;
+      isSwiping = true;
+      activeSwipeElement = inner;
+      inner.style.transition = 'none';
+    }, { passive: true });
+
+    inner.addEventListener('touchmove', (e) => {
+      if (!isSwiping || activeSwipeElement !== inner) return;
+      const x = e.touches[0].clientX;
+      const diffX = x - swipeStartX;
+      
+      // Limit swipe distance
+      if (diffX > -100 && diffX < 100) {
+        swipeCurrentX = diffX;
+        inner.style.transform = `translateX(${diffX}px)`;
+      }
+    }, { passive: true });
+
+    inner.addEventListener('touchend', (e) => {
+      if (!isSwiping || activeSwipeElement !== inner) return;
+      isSwiping = false;
+      inner.style.transition = 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)';
+      
+      // Threshold for action
+      if (swipeCurrentX < -50) {
+        // Swipe left -> Delete
+        inner.style.transform = `translateX(-70px)`;
+        setTimeout(() => {
+          const btn = inner.parentElement.querySelector('[data-delete-txn]');
+          if(btn) btn.click();
+        }, 200);
+      } else if (swipeCurrentX > 50) {
+        // Swipe right -> Edit
+        inner.style.transform = `translateX(70px)`;
+        setTimeout(() => {
+          const btn = inner.parentElement.querySelector('[data-edit-txn]');
+          if(btn) btn.click();
+        }, 200);
+      } else {
+        // Revert
+        inner.style.transform = `translateX(0)`;
+      }
+      
+      // Reset after animation
+      setTimeout(() => {
+        if(inner) inner.style.transform = `translateX(0)`;
+      }, 300);
+      
+      swipeCurrentX = 0;
+      activeSwipeElement = null;
+    });
+  });
+
   document.querySelectorAll('[data-txn-toggle]').forEach(row => {
     row.addEventListener('click', (e) => {
       if (e.target.closest('[data-edit-txn]') || e.target.closest('[data-delete-txn]') || e.target.closest('[data-confirm-delete]') || e.target.closest('[data-cancel-delete]') || e.target.closest('[data-topup-edit]')) return;
+      // Prevent click if we just swiped
+      if (Math.abs(swipeCurrentX) > 10) return;
+
       const id = row.dataset.txnToggle;
       state.expandedTxnId = state.expandedTxnId === id ? null : id;
       state.confirmDeleteId = null;
@@ -2782,19 +2859,29 @@ init();
 /* ── Pull to Refresh ── */
 let touchStartY = 0;
 let isPulling = false;
+const ptrIndicator = document.getElementById('pull-refresh-indicator');
+const ptrIcon = ptrIndicator ? ptrIndicator.querySelector('.ptr-icon') : null;
+
 document.addEventListener('touchstart', (e) => {
-  if (window.scrollY === 0) {
+  if (window.scrollY <= 0 && state.view === 'dashboard' && !state.modal) {
     touchStartY = e.touches[0].clientY;
     isPulling = true;
   }
 }, { passive: true });
 
 document.addEventListener('touchmove', (e) => {
-  if (!isPulling) return;
+  if (!isPulling || !ptrIndicator) return;
   const touchY = e.touches[0].clientY;
   const pullDistance = touchY - touchStartY;
-  if (pullDistance > 120) {
-    document.body.style.transform = `translateY(${Math.min(pullDistance - 120, 60)}px)`;
+  
+  if (pullDistance > 10 && window.scrollY <= 0) {
+    const pullAmount = Math.min(pullDistance, 140); // Max pull
+    const dragRatio = pullAmount / 140;
+    
+    document.body.style.transform = `translateY(${pullAmount * 0.4}px)`; // Slower body drag
+    ptrIndicator.style.opacity = Math.min(dragRatio * 1.5, 1);
+    ptrIndicator.style.transform = `translateY(${pullAmount * 0.8}px)`; // Faster indicator drop
+    if (ptrIcon) ptrIcon.style.transform = `rotate(${dragRatio * 360}deg)`;
   }
 }, { passive: true });
 
@@ -2802,25 +2889,50 @@ document.addEventListener('touchend', async (e) => {
   if (!isPulling) return;
   isPulling = false;
   const pullDistance = e.changedTouches[0].clientY - touchStartY;
+  
+  document.body.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
   document.body.style.transform = 'translateY(0)';
-  document.body.style.transition = 'transform 0.3s ease';
   setTimeout(() => document.body.style.transition = '', 300);
 
-  if (pullDistance > 150 && window.scrollY === 0) {
+  if (pullDistance > 100 && window.scrollY <= 0) {
+    // Trigger refresh
     if (navigator.vibrate) navigator.vibrate([20, 50, 20]);
-    if (USE_FIREBASE) {
-      const ok = await initFirebase();
-      if (ok) {
-        try {
-          const { collection, getDocs } = firebaseModules;
-          const txnSnap = await getDocs(collection(db, 'transactions'));
-          const remoteTxns = [];
-          txnSnap.forEach(d => remoteTxns.push(d.data()));
-          state.transactions = remoteTxns;
-          persistAll();
-          render();
-        } catch (err) { console.warn('Refresh failed', err); }
+    if (ptrIndicator) {
+      ptrIndicator.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease';
+      ptrIndicator.style.transform = 'translateY(60px)'; // Hold position while spinning
+      if (ptrIcon) ptrIcon.style.animation = 'spin 0.8s linear infinite';
+    }
+
+    if (USE_FIREBASE && firebaseModules && firebaseModules.collection) {
+      try {
+        const { collection, getDocs } = firebaseModules;
+        const txnSnap = await getDocs(collection(db, 'transactions'));
+        const remoteTxns = [];
+        txnSnap.forEach(d => remoteTxns.push(d.data()));
+        state.transactions = remoteTxns;
+        persistAll();
+        renderViewContent();
+      } catch (err) { 
+        console.warn('Refresh failed', err); 
       }
+    } else {
+      // Fake delay for local-only testing
+      await new Promise(r => setTimeout(r, 600));
+    }
+
+    // Hide indicator
+    if (ptrIndicator) {
+      ptrIndicator.style.transform = 'translateY(0)';
+      ptrIndicator.style.opacity = '0';
+      setTimeout(() => {
+        if (ptrIcon) ptrIcon.style.animation = 'none';
+      }, 300);
+    }
+  } else {
+    // Cancelled pull
+    if (ptrIndicator) {
+      ptrIndicator.style.transform = 'translateY(0)';
+      ptrIndicator.style.opacity = '0';
     }
   }
 });
